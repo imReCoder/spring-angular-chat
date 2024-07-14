@@ -37,9 +37,12 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "src/assets/fontawesome-6.5.2/css/all.min.css"
             ],
-            "scripts": []
+            "scripts": [
+              "src/assets/fontawesome-6.5.2/js/all.min.js"
+            ]
           },
           "configurations": {
             "production": {

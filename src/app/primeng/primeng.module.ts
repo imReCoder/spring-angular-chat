@@ -101,8 +101,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { FloatLabelModule } from 'primeng/floatlabel';
 
 const commonImports = [
-  // AvatarModule,
-  // AvatarGroupModule,
+  AvatarModule,
+  AvatarGroupModule,
   // AccordionModule,
   // AutoCompleteModule,
   // BadgeModule,
@@ -123,7 +123,7 @@ const commonImports = [
   // VirtualScrollerModule,
   // DataViewModule,
   // DialogModule,
-  // DividerModule,
+  DividerModule,
   // DockModule,
   // DragDropModule,
   DropdownModule,
