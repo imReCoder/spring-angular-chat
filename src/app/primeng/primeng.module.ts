@@ -138,7 +138,7 @@ const commonImports = [
   InputTextModule,
   // InputTextareaModule,
   // InputNumberModule,
-  // InputGroupModule,
+  InputGroupModule,
   // InputGroupAddonModule,
   // InputOtpModule,
   // ImageModule,

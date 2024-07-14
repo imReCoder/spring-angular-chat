@@ -1,31 +1,34 @@
 <div class="chat-list-wrapper shadow-lg h-full p-2">
-  <div class="app-header flex flex-wrap text-2xl font-bold p-1 justify-evenly content-center gap-2">
-    <div class="profile">
-      <p-avatar
-      label="R"
-      styleClass="mr-2"
-      size="large"
-      shape="square" />
+  <div class="content" *ngIf="(currentUser$ | async) as user;else loader">
+    <div class="app-header flex flex-wrap text-2xl font-bold p-1 justify-evenly content-center gap-2">
+      <div class="profile flex justify-center content-center">
+        <p-avatar [image]="user.profileImage" [pTooltip]="user.email"  styleClass="mt-2" size="large" shape="circle" />
+      </div>
+      <div class="app-title  flex flex-wrap text-2xl font-bold p-1 justify-center content-center gap-2">
+        <div class="icon"><i class="fa-solid fa-leaf"></i></div>
+        <div class="title">Spring Chat</div>
+      </div>
     </div>
-    <div class="app-title  flex flex-wrap text-2xl font-bold p-1 justify-center content-center gap-2">
-      <div class="icon"><i class="fa-solid fa-leaf"></i></div>
-      <div class="title">Spring Chat</div>
-    </div>
-  </div>
-  <p-divider />
-  <div class="chats w-full">
+    <p-divider />
+    <div class="chats w-full">
       <div class="chat-item w-full p-2 hover:bg-slate-200 rounded cursor-pointer" *ngFor="let chat of chats">
         <div class="flex w-full">
-          <p-avatar
-          label="P"
-          styleClass="mr-2"
-          size="large"
-          shape="circle" />
+          <p-avatar label="P" styleClass="mr-2" size="large" shape="circle" />
           <div class="title flex-1 flex flex-col justify-center content-center">
             <div class="text">{{chat.name}}</div>
             <div class="sub-text text-gray-400 text-xs">{{chat.lastMessage}}</div>
           </div>
         </div>
       </div>
+    </div>
   </div>
 </div>
+
+<ng-template #loader>
+  <div class="loader h-full w-full flex flex-wrap d-flex justify-center content-center text-3xl">
+
+    <div class="icon">
+      <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+    </div>
+  </div>
+</ng-template>

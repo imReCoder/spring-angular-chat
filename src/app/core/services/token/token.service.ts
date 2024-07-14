@@ -29,6 +29,11 @@ export class TokenService {
     return JSON.parse(atob(tokenParts[1]));
   }
 
+  getUsreId(){
+    const tokenData = this.getTokenData();
+    if(!tokenData) return null;
+    return tokenData.sub;
+  }
   setToken(token: string) {
     this.token = token;
     localStorage.setItem('token', token);

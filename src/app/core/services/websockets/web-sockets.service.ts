@@ -36,13 +36,14 @@ export class WebsocketsService {
   }
 
   joinChat() {
-    const tokenData = this.tokenService.getTokenData();
-    console.log(tokenData);
-    const userEmail = tokenData.sub;
+    const userId = this.tokenService.getUsreId();
+
+    const sub =  `/topic/messages/${userId}`;
+    console.log(`Subscribing to :${sub}`);
     this.stompClient.connect({
        }, () => {
       this.stompClient.subscribe(
-        `/user/${userEmail}/queue/messages`,
+       sub,
         (message: IMessage): void => {
           const decoder = new TextDecoder('utf-8');
           const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
@@ -55,6 +56,7 @@ export class WebsocketsService {
   }
 
   sendMessage(message: MessageDTO) {
+    message.senderId = this.tokenService.getUsreId();
     console.debug(`Sending message: ${JSON.stringify(message, null, 2)}`);
     try {
       this.stompClient.send(

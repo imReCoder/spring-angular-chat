@@ -6,18 +6,22 @@ import { HomeComponent } from './home/home.component';
 import { ChatListComponent } from './chat-list/chat-list.component';
 import { ChatWindowComponent } from './chat-window/chat-window.component';
 import { PrimengModule } from '../primeng/primeng.module';
+import { SearchUserComponent } from './search-user/search-user.component';
+import { SharedModule } from '../shared/shared.module';
 
 
 @NgModule({
   declarations: [
     HomeComponent,
     ChatListComponent,
-    ChatWindowComponent
+    ChatWindowComponent,
+    SearchUserComponent
   ],
   imports: [
     CommonModule,
     ChatRoutingModule,
-    PrimengModule
+    PrimengModule,
+    SharedModule
   ]
 })
 export class ChatModule { }

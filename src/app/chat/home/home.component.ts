@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { WebsocketsService } from '../../core/services/websockets/web-sockets.service';
+import { UsersService } from '../../core/services/users/users.service';
+import { DialogService } from 'primeng/dynamicdialog';
+import { SearchUserComponent } from '../search-user/search-user.component';
 
 @Component({
   selector: 'app-home',
@@ -7,14 +10,15 @@ import { WebsocketsService } from '../../core/services/websockets/web-sockets.se
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
-  constructor(private wsService:WebsocketsService) {
-    this.wsService.initializeWebSocketConnection();
-    setTimeout(() => {
-      this.wsService.sendMessage({
-        senderId: '123',
-        receiverId: '456',
-        content: 'Hello, how are you?'
+  constructor(private wsService:WebsocketsService,private userService:UsersService,private dialogService:DialogService) {
+
+   }
+
+   newChat(){
+      console.log('New Chat');
+      this.dialogService.open(SearchUserComponent, {
+        width:'60%',
+
       });
-    },3000)
    }
 }
