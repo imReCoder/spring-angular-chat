@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Optional } from '@angular/core';
 import {
   Observable,
   Subject,
@@ -12,6 +12,7 @@ import {
 } from 'rxjs';
 import { User } from '../../core/models/user';
 import { UsersService } from '../../core/services/users/users.service';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-search-user',
@@ -25,7 +26,8 @@ export class SearchUserComponent {
 
   isLoading = false;
 
-  constructor(private userService: UsersService) {
+
+  constructor(private userService: UsersService,@Optional() private dialogRef:DynamicDialogRef ) {
     this.searchResultUsers$ = this.searchKey$.pipe(
       debounceTime(500), // wait for 1 second pause in events
       distinctUntilChanged(), // ignore new term if same as previous term
@@ -44,5 +46,9 @@ export class SearchUserComponent {
   onSearchKeyChange() {
     this.isLoading = true;
     this.searchKey$.next(this.keyword);
+  }
+
+  selectUser(user:User){
+    this.dialogRef.close(user);
   }
 }

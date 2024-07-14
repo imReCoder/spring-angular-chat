@@ -1,23 +1,35 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component } from '@angular/core';
 import { UsersService } from '../../core/services/users/users.service';
 import { User } from '../../core/models/user';
-import { Observable } from 'rxjs';
+import { Observable, mergeMap, switchMap } from 'rxjs';
+import { ChatDbService } from '../services/chat-db.service';
+import { ChatListItem } from '../../core/models/chat-list-item';
+import { ChatService } from '../services/chat.service';
 
 @Component({
   selector: 'app-chat-list',
   templateUrl: './chat-list.component.html',
-  styleUrl: './chat-list.component.scss'
+  styleUrl: './chat-list.component.scss',
 })
-export class ChatListComponent {
+export class ChatListComponent implements AfterViewInit {
+  currentUser$: Observable<User | null>;
+  chatList$: Observable<ChatListItem[]>;
 
-  currentUser$:Observable<User | null>  = this.userService.getCurrentUser();
-  constructor(private userService:UsersService) { }
+  constructor(
+    private userService: UsersService,
+    private chatDb: ChatDbService,
+    private _cdr: ChangeDetectorRef,
+    private chatService:ChatService
+  ) {
+    this.currentUser$ = this.userService.getCurrentUser$();
+    this.chatList$ = chatDb.chatListModifySubject$.pipe(
+      switchMap(() => chatDb.getChatList$())
+    );
+  }
 
-   chats = [
-    {
-      name:"Ranjit",
-      lastMessage:"Hi",
-      timestamp:6576576
-    }
-  ]
+  ngAfterViewInit() {}
+
+  activateChat(chat: ChatListItem) {
+    this.chatService.setActiveChat(chat);
+  }
 }

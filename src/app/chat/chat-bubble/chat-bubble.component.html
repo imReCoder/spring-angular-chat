@@ -1,0 +1,5 @@
+<div class="messages" [class.chat-in]="message.senderId!=userId" [class.chat-out]="message.senderId==userId" *ngIf="message">
+  <div class="message" [class.last]="isLast">
+    {{message.content}}
+   </div>
+</div>

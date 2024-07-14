@@ -44,7 +44,7 @@ export class UsersService {
     return this.httpClient.get<IResponse<User>>(`${this.baseURL}/get`).pipe(map(res=>res.data));
   }
 
-  getCurrentUser(): Observable<User | null> {
+  getCurrentUser$(): Observable<User | null> {
     return this.currentUser$.asObservable();
   }
 }

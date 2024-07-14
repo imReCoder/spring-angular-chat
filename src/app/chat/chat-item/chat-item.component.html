@@ -1,0 +1,9 @@
+<div class="chat-item w-full p-2 hover:bg-slate-200 rounded cursor-pointer" *ngIf="chatItem">
+  <div class="flex w-full">
+  <app-user-avatar [profileImage]="chatItem.profileImage" [name]="chatItem.name"></app-user-avatar>
+    <div class="title flex-1 flex flex-col justify-center content-center">
+      <div class="text">{{chatItem.name}}</div>
+      <div class="sub-text text-gray-400 text-xs">{{chatItem.lastMessage}}</div>
+    </div>
+  </div>
+</div>

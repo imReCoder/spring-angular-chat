@@ -11,15 +11,9 @@
     </div>
     <p-divider />
     <div class="chats w-full">
-      <div class="chat-item w-full p-2 hover:bg-slate-200 rounded cursor-pointer" *ngFor="let chat of chats">
-        <div class="flex w-full">
-          <p-avatar label="P" styleClass="mr-2" size="large" shape="circle" />
-          <div class="title flex-1 flex flex-col justify-center content-center">
-            <div class="text">{{chat.name}}</div>
-            <div class="sub-text text-gray-400 text-xs">{{chat.lastMessage}}</div>
-          </div>
-        </div>
-      </div>
+      <ng-container *ngIf="(chatList$ | async) as chatListItems">
+     <app-chat-item *ngFor="let chat of chatListItems" [chatItem]="chat" (click)="activateChat(chat)"></app-chat-item>
+    </ng-container>
     </div>
   </div>
 </div>

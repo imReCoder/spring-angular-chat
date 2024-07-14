@@ -8,6 +8,17 @@ import { SharedModule } from './shared/shared.module';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { TokenInterceptor } from './core/interceptors/token/token.interceptor';
 import { UsersService } from './core/services/users/users.service';
+import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
+import { ChatDbService } from './chat/services/chat-db.service';
+
+
+const dbConfig: DBConfig  = {
+  name: 'SpringChatDb',
+  version: 1,
+  objectStoresMeta: [
+
+  ]
+};
 
 @NgModule({
   declarations: [
@@ -18,7 +29,8 @@ import { UsersService } from './core/services/users/users.service';
     AppRoutingModule,
     SharedModule,
     HttpClientModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    NgxIndexedDBModule.forRoot(dbConfig)
   ],
   providers: [
     {

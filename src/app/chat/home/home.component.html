@@ -3,12 +3,12 @@
     <div class="sidepanel h-full">
       <app-chat-list></app-chat-list>
     </div>
-    <div class="chat-window">
+    <div class="chat-window flex-1">
       <app-chat-window></app-chat-window>
     </div>
   </div>
 
-  <div class="new-chat absolute bottom-10 right-10">
-    <p-button icon="pi pi-plus" [pTooltip]="'New Chat'" [rounded]="true" (click)="newChat()" />
+  <div class="new-chat absolute bottom-10 left-10">
+    <p-button icon="pi pi-plus" [pTooltip]="'New Chat'" [rounded]="true" (click)="newChatDialog()" />
   </div>
 </div>

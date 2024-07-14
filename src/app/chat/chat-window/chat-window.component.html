@@ -1,1 +1,33 @@
-<p>chat-window works!</p>
+<div class="wrapper h-full w-full">
+  <div class="content flex flex-col h-full w-full" *ngIf="(activeChat$ | async) as activeChat ; else noActiveChat">
+    <div class="header flex p-2 gap-1 bg-blue-950">
+      <div class="left">
+        <app-user-avatar [profileImage]="activeChat.profileImage" [name]="activeChat.name"></app-user-avatar>
+      </div>
+      <div class="right text-white">
+        <div class="name text-lg">{{activeChat.name}}</div>
+        <div class="status text-sm text-gray-50">offline</div>
+      </div>
+    </div>
+    <div class="chats flex-1 p-3">
+      <app-chat-bubble [message]="message"></app-chat-bubble>
+      <app-chat-bubble [message]="message" [isLast]="true"></app-chat-bubble>
+    </div>
+
+    <div class="input-panel p-2">
+      <p-inputGroup>
+        <input type="text" pInputText [(ngModel)]="inputMessage" placeholder="Message" />
+        <button type="button" pButton label="Send" icon="pi pi-send" (click)="sendMessage()"></button>
+    </p-inputGroup>
+    </div>
+  </div>
+</div>
+
+<ng-template #noActiveChat>
+  <div class="message h-full w-full flex flex-col flex-wrap justify-center content-center text-4xl">
+    <div class="icon">
+      <i class="fa-solid fa-leaf"></i>
+    </div>
+    <h4>Welcome to Spring Chat</h4>
+  </div>
+</ng-template>

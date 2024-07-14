@@ -1,4 +1,4 @@
-<div class="wrapper">
+<div class="wrapper h-full">
   <div class="content">
     <div class="input">
       <p-inputGroup>
@@ -12,10 +12,12 @@
       <ng-container *ngIf="(searchResultUsers$ | async) as users">
       <div *ngIf="!isLoading;else searchingTemplate">
         <div class="users" *ngIf="users.length;else noUserFound">
-        <div class="user mt-2" *ngFor="let user of users">
+        <div class="user mt-2" *ngFor="let user of users" (click)="selectUser(user)">
           <div class="w-full p-2 hover:bg-slate-200 rounded cursor-pointer">
             <div class="flex w-full">
-              <p-avatar [image]="user.profileImage" styleClass="mr-2" size="large" shape="circle" />
+              <p-avatar *ngIf="user.profileImage" [image]="user.profileImage" styleClass="mr-2" size="large" shape="circle" />
+              <p-avatar *ngIf="!user.profileImage" [label]="user.name.charAt(0).toUpperCase()" styleClass="mr-2" size="large" shape="circle" />
+
               <div class="title flex-1 flex flex-col justify-center content-center">
                 <div class="text">{{user.name}}</div>
                 <div class="sub-text text-gray-400 text-xs">{{user.email}}</div>

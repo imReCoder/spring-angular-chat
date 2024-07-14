@@ -20,6 +20,7 @@
     "@angular/router": "^17.3.0",
     "@stomp/stompjs": "^7.0.0",
     "@types/sockjs-client": "^1.5.4",
+    "ngx-indexed-db": "^18.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.4",
     "rxjs": "~7.8.0",
