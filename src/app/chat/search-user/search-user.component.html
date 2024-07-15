@@ -18,7 +18,7 @@
               <p-avatar *ngIf="user.profileImage" [image]="user.profileImage" styleClass="mr-2" size="large" shape="circle" />
               <p-avatar *ngIf="!user.profileImage" [label]="user.name.charAt(0).toUpperCase()" styleClass="mr-2" size="large" shape="circle" />
 
-              <div class="title flex-1 flex flex-col justify-center content-center">
+              <div class="title flex-1 flex flex-col justify-center">
                 <div class="text">{{user.name}}</div>
                 <div class="sub-text text-gray-400 text-xs">{{user.email}}</div>
               </div>
@@ -32,7 +32,7 @@
 </div>
 
 <ng-template #searchingTemplate>
-  <div class="loader h-full w-full flex flex-wrap d-flex justify-center content-center text-3xl py-5">
+  <div class="loader h-full w-full flex flex-wrap d-flex justify-center items-center text-3xl py-5">
     <div class="icon">
       <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
     </div>
@@ -40,7 +40,7 @@
 </ng-template>
 
 <ng-template #noUserFound>
-  <div class="h-full w-full flex flex-wrap d-flex justify-center content-center text-3xl py-5">
+  <div class="h-full w-full flex flex-wrap d-flex justify-center items-center text-3xl py-5">
     <div class="icon mr-1">
       <i class="fa-solid fa-user-large"></i>
     </div>

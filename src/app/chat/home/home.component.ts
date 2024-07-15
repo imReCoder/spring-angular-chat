@@ -4,6 +4,7 @@ import { UsersService } from '../../core/services/users/users.service';
 import { DialogService } from 'primeng/dynamicdialog';
 import { SearchUserComponent } from '../search-user/search-user.component';
 import { ChatDbService } from '../services/chat-db.service';
+import { ChatService } from '../services/chat.service';
 
 @Component({
   selector: 'app-home',
@@ -14,9 +15,15 @@ export class HomeComponent {
   constructor(
     private userService: UsersService,
     private dialogService: DialogService,
-    private chatDbService: ChatDbService
+    private chatDbService: ChatDbService,
+    private chatService:ChatService
   ) {
-
+      // this.chatService.sendMessage({
+      //     senderId: '102',
+      //     receiverId: '123',
+      //     content: 'Hello',
+      //     timestamp: Date.now(),
+      // })
   }
 
   newChatDialog() {
@@ -35,6 +42,7 @@ export class HomeComponent {
           profileImage: user.profileImage,
           lastMessage: '',
           lastMessageTimestamp: Date.now(),
+          unread: 0,
         });
       });
   }

@@ -4,6 +4,7 @@ import { MessageDTO } from '../../core/models/message';
 import { BehaviorSubject, Subject, firstValueFrom, tap } from 'rxjs';
 import { User } from '../../core/models/user';
 import { ChatListItem } from '../../core/models/chat-list-item';
+import { Message } from '@stomp/stompjs';
 
 @Injectable({
   providedIn: 'root',
@@ -17,7 +18,7 @@ export class ChatDbService {
 
   constructor(private indexDb: NgxIndexedDBService) {
     console.log('ChatDbService Initialized...............', this._chatsStore);
-    indexDb.createObjectStore({
+    this.indexDb.createObjectStore({
       store: this._chatsStore,
       storeConfig: { keyPath: 'id', autoIncrement: true },
       storeSchema: [
@@ -29,10 +30,12 @@ export class ChatDbService {
         },
         { name: 'content', keypath: 'message', options: { unique: false } },
         { name: 'timestamp', keypath: 'timestamp', options: { unique: false } },
-      ],
-    });
+        { name: 'senderId_receiverId', keypath: 'senderId_receiverId', options: { unique: false } }
 
-    indexDb.createObjectStore({
+      ],
+    }).then(() => console.log('Chats Store Created...............')).catch(console.log);
+
+   this.indexDb.createObjectStore({
       store: this._usersStore,
       storeConfig: { keyPath: 'id', autoIncrement: false },
       storeSchema: [
@@ -45,9 +48,9 @@ export class ChatDbService {
         },
         { name: 'id', keypath: 'id', options: { unique: true } },
       ],
-    });
+    }).then(() => console.log('Users Store Created...............')).catch(console.log);
 
-    indexDb.createObjectStore({
+    this.indexDb.createObjectStore({
       store: this._chatListStore,
       storeConfig: { keyPath: 'id', autoIncrement: false },
       storeSchema: [
@@ -68,10 +71,21 @@ export class ChatDbService {
           name: 'lastMessageTimestamp',
           keypath: 'lastMessageTimestamp',
           options: { unique: false },
+        },
+        {
+          name: 'unreadMessages',
+          keypath: 'unreadMessages',
+          options: { unique: false },
+        },
+        {
+          name:"unread",
+          keypath:"unread",
+          options:{unique:false}
         }
       ],
-    });
+    }).then(() => console.log('Chat List Store Created...............')).catch(console.log);
   }
+
 
   get _chatsStore() {
     return ChatDbService._chatsStore;
@@ -87,7 +101,8 @@ export class ChatDbService {
 
   addMessageAsync(message: MessageDTO) {
     console.log('Adding Message to DB...............', message);
-    return firstValueFrom(this.indexDb.update(this._chatsStore, message));
+    const id = `${message.senderId}_${message.receiverId}`;
+    return firstValueFrom(this.indexDb.update(this._chatsStore, {...message ,senderId_receiverId:id}));
   }
 
   addUserAsync(user: User) {
@@ -100,6 +115,20 @@ export class ChatDbService {
     return firstValueFrom(this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true))));
   }
 
+  getChatListItemByRemoteUserId(remoteUserId: string) {
+    console.log('Getting Chat List Item from DB...............', remoteUserId);
+    return firstValueFrom(this.indexDb.getByIndex<ChatListItem>(this._chatListStore, 'id', remoteUserId));
+  }
+
+  updateChatListItem(remoteUserId:string,chatListItemChanges:Partial<ChatListItem>){
+    // get chat list item and update unread count;
+    console.log('Updating Chat List Item...............',remoteUserId);
+    return this.getChatListItemByRemoteUserId(remoteUserId).then((chatListItem)=>{
+      chatListItem.unread = chatListItem.unread + 1;
+      return this.addChatListItemAsync({...chatListItem,...chatListItemChanges});
+    });
+  }
+
   getChatList$() {
     console.log('Getting Chat List from DB...............');
     return this.indexDb.getAll<ChatListItem>(this._chatListStore);
@@ -107,5 +136,24 @@ export class ChatDbService {
 
   get chatListModifySubject$() {
     return this._chatListModifySubject.asObservable();
+  }
+
+  isUserIdPresentInChatList(userId:string){
+    return this.indexDb.getByIndex<ChatListItem>(this._chatListStore,'id',userId);
+  }
+
+  markChatItemAsReadAsync(chatListItem:ChatListItem){
+    console.log('Marking Chat Item as Read...............',chatListItem.id);
+    chatListItem.unread = 0;
+    return firstValueFrom(this.indexDb.update(this._chatListStore,chatListItem).pipe(tap(()=>this._chatListModifySubject.next(true))));
+  }
+
+  getChatMessages(remoteUserId:string,currentUserId:string){
+    const sentByYouId = `${remoteUserId}_${currentUserId}`;
+    console.log('Getting Chat Messages...............',sentByYouId);
+    const sentToMeRange = IDBKeyRange.bound(sentByYouId,sentByYouId);
+    const sentToMe = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentToMeRange).pipe(tap(console.log));
+
+    return sentToMe;
   }
 }

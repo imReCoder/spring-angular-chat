@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CompatClient, IMessage, Stomp } from '@stomp/stompjs';
+import { CompatClient, IMessage, Message, Stomp } from '@stomp/stompjs';
 import { Observable, Subject } from 'rxjs';
 import SockJS from 'sockjs-client';
 import { TokenService } from '../token/token.service';
@@ -14,6 +14,8 @@ import { ConfigService } from '../../../shared/config.service';
 export class WebsocketsService {
   private serverUrl;
   private stompClient!: CompatClient;
+
+  private onIncomingMessageSubject = new Subject<MessageDTO>();
 
   constructor(
     private messagesDataSharingService: MessagesDataSharingService,
@@ -47,9 +49,9 @@ export class WebsocketsService {
         (message: IMessage): void => {
           const decoder = new TextDecoder('utf-8');
           const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
-          const parsedMessage = JSON.parse(jsonBody);
-          console.log(parsedMessage);
-          this.messagesDataSharingService.emitIncomingMessage(parsedMessage);
+          const parsedMessage:MessageDTO = JSON.parse(jsonBody);
+
+          this.onIncomingMessageSubject.next(parsedMessage);
         }
       );
     }, this.errorCallBack);
@@ -69,6 +71,11 @@ export class WebsocketsService {
 
   errorCallBack(error: any) {
     console.log(error)
+  }
+
+
+  onIncomingMessage$(): Observable<MessageDTO> {
+    return this.onIncomingMessageSubject.asObservable();
   }
 
   disconnect() {

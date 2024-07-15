@@ -9,25 +9,26 @@
         <div class="status text-sm text-gray-50">offline</div>
       </div>
     </div>
-    <div class="chats flex-1 p-3">
-      <app-chat-bubble [message]="message"></app-chat-bubble>
-      <app-chat-bubble [message]="message" [isLast]="true"></app-chat-bubble>
+    <div class="chats flex-1 overflow-auto p-3">
+      <!-- <ng-container *ngIf="chats$"> -->
+        <app-chat-bubble *ngFor="let chat of (allChats);let last = last" [message]="chat" [isLast]="last" inView (inView)="onInView(message)"></app-chat-bubble>
+      <!-- </ng-container> -->
     </div>
 
     <div class="input-panel p-2">
       <p-inputGroup>
         <input type="text" pInputText [(ngModel)]="inputMessage" placeholder="Message" />
         <button type="button" pButton label="Send" icon="pi pi-send" (click)="sendMessage()"></button>
-    </p-inputGroup>
+      </p-inputGroup>
     </div>
   </div>
 </div>
 
 <ng-template #noActiveChat>
-  <div class="message h-full w-full flex flex-col flex-wrap justify-center content-center text-4xl">
+  <div class="message h-full w-full flex flex-col flex-wrap justify-center items-center text-4xl">
     <div class="icon">
       <i class="fa-solid fa-leaf"></i>
     </div>
-    <h4>Welcome to Spring Chat</h4>
+    <div class="text font-bold mt-3">Welcome to Spring Chat</div>
   </div>
 </ng-template>

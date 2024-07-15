@@ -1,10 +1,10 @@
 <div class="chat-list-wrapper shadow-lg h-full p-2">
   <div class="content" *ngIf="(currentUser$ | async) as user;else loader">
-    <div class="app-header flex flex-wrap text-2xl font-bold p-1 justify-evenly content-center gap-2">
-      <div class="profile flex justify-center content-center">
+    <div class="app-header flex flex-wrap text-2xl font-bold p-1 justify-evenly items-center gap-2">
+      <div class="profile flex justify-center items-center">
         <p-avatar [image]="user.profileImage" [pTooltip]="user.email"  styleClass="mt-2" size="large" shape="circle" />
       </div>
-      <div class="app-title  flex flex-wrap text-2xl font-bold p-1 justify-center content-center gap-2">
+      <div class="app-title  flex flex-wrap text-2xl font-bold p-1 justify-center items-center gap-2">
         <div class="icon"><i class="fa-solid fa-leaf"></i></div>
         <div class="title">Spring Chat</div>
       </div>
@@ -19,7 +19,7 @@
 </div>
 
 <ng-template #loader>
-  <div class="loader h-full w-full flex flex-wrap d-flex justify-center content-center text-3xl">
+  <div class="loader h-full w-full flex flex-wrap d-flex justify-center items-center text-3xl">
 
     <div class="icon">
       <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>

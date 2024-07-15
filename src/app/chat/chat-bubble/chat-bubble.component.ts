@@ -14,7 +14,6 @@ export class ChatBubbleComponent {
   userId:string;
 
   constructor(private tokenService:TokenService) {
-    console.log('Token:', tokenService.getToken());
     this.userId = tokenService.getUsreId();
   }
 }
