@@ -11,6 +11,7 @@ import { UsersService } from './core/services/users/users.service';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { ChatDbService } from './chat/services/chat-db.service';
 import { InViewDirective } from './core/directives/in-view.directive';
+import { AutoScrollDirective } from './core/directives/auto-scroll.directive';
 
 
 const dbConfig: DBConfig  = {
@@ -24,7 +25,6 @@ const dbConfig: DBConfig  = {
 @NgModule({
   declarations: [
     AppComponent,
-    InViewDirective
   ],
   imports: [
     BrowserModule,

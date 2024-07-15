@@ -15,7 +15,7 @@ export class TokenService {
       const tokenParts = token.split('.');
       const expiry = JSON.parse(atob(tokenParts[1])).exp;
       const timeLeft = expiry - (Date.now() / 1000);
-      console.log(`Token expires in ${timeLeft} seconds`);
+      // console.log(`Token expires in ${timeLeft} seconds`);
       return new Date(expiry * 1000) > new Date();
     }catch(e){
       return false;
