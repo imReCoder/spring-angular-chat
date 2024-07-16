@@ -2,4 +2,9 @@
   <div class="message" [class.last]="isLast">
     {{message.content}}
    </div>
+   <div class="info text-[10px]">
+    <div class="time">
+      {{message.timestamp | date}}
+    </div>
+  </div>
 </div>

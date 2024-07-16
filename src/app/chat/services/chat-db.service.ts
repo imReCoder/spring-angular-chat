@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { MessageDTO } from '../../core/models/message';
-import { BehaviorSubject, Subject, firstValueFrom, tap } from 'rxjs';
+import { BehaviorSubject, Subject, firstValueFrom, map, merge, reduce, switchMap, tap } from 'rxjs';
 import { User } from '../../core/models/user';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { Message } from '@stomp/stompjs';
@@ -150,10 +150,15 @@ export class ChatDbService {
 
   getChatMessages(remoteUserId:string,currentUserId:string){
     const sentByYouId = `${remoteUserId}_${currentUserId}`;
-    console.log('Getting Chat Messages...............',sentByYouId);
-    const sentToMeRange = IDBKeyRange.bound(sentByYouId,sentByYouId);
-    const sentToMe = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentToMeRange).pipe(tap(console.log));
+    const sentByMeId = `${currentUserId}_${remoteUserId}`;
+    console.log('Getting Chat Messages...............',sentByYouId,sentByMeId);
 
-    return sentToMe;
+    const sentByYouKeyRange = IDBKeyRange.bound(sentByYouId,sentByYouId);
+    const sentByMeKeyRange = IDBKeyRange.bound(sentByMeId,sentByMeId);
+
+    const sentByYouMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByYouKeyRange).pipe(tap((d)=>console.log("By You ",d)));
+    const sentByMeMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByMeKeyRange).pipe(tap((d)=>console.log("By me ",d)));
+
+    return merge(sentByYouMessages,sentByMeMessages).pipe(reduce((a,b)=>a.concat(b)),map((messages)=>messages.sort((a:MessageDTO,b:MessageDTO)=>a.timestamp - b.timestamp)));
   }
 }

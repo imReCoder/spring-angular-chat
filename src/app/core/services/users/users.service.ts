@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, map } from 'rxjs';
 import { User } from '../../models/user';
 import { ConfigService } from '../../../shared/config.service';
 import { IResponse } from '../../models/response';
+import { TokenService } from '../token/token.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,8 @@ export class UsersService {
 
   constructor(
     private httpClient: HttpClient,
-    private config:ConfigService
+    private config:ConfigService,
+    private tokenService:TokenService
   ) {
     console.debug('UsersService Initialized...............');
     this.getUser().subscribe({
@@ -50,5 +52,9 @@ export class UsersService {
 
   getUserById(id: string): Observable<User> {
     return this.httpClient.get<IResponse<User>>(`${this.baseURL}/get/${id}`).pipe(map(res=>res.data));
+  }
+
+  getCurrentUserId(){
+    return this.tokenService.getUsreId();
   }
 }

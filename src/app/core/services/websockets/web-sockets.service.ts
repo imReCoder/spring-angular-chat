@@ -18,7 +18,6 @@ export class WebsocketsService {
   private onIncomingMessageSubject = new Subject<MessageDTO>();
 
   constructor(
-    private messagesDataSharingService: MessagesDataSharingService,
     private config:ConfigService,
 
     private tokenService:TokenService

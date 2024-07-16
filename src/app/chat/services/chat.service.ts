@@ -21,7 +21,8 @@ export class ChatService {
     private usersService: UsersService
   ) {
     console.log('ChatService Initialized...............');
-    this.wsService.onIncomingMessage$().subscribe((message) => {
+    this.wsService.onIncomingMessage$().subscribe(async(message) => {
+      await this.chatDb.addMessageAsync(message);
       this.onNewMessageSubject.next(message);
       this.chatDb
         .isUserIdPresentInChatList(message.senderId)
@@ -42,12 +43,14 @@ export class ChatService {
                 await this.chatDb.addChatListItemAsync(chatListItem);
               });
           }
-          await this.chatDb.updateChatListItem(isPresent.id as string, {
-            lastMessage: message.content,
-            lastMessageTimestamp: message.timestamp,
-            unread: isPresent.unread + 1,
-          });
-          await this.chatDb.addMessageAsync(message);
+
+          if(isPresent){
+            await this.chatDb.updateChatListItem(isPresent.id as string, {
+              lastMessage: message.content,
+              lastMessageTimestamp: message.timestamp,
+              unread: isPresent.unread + 1,
+            });
+          }
         });
       console.log('Incoming Message:', message);
     });
@@ -75,9 +78,10 @@ export class ChatService {
     };
   }
 
-  sendMessage(message: MessageDTO) {
+  async sendMessage(message: MessageDTO) {
     this.wsService.sendMessage(message);
     this.onNewMessageSubject.next(message);
+    await this.chatDb.addMessageAsync(message);
   }
 
   markChatItemAsRead(chatListItem: ChatListItem) {
