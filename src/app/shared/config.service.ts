@@ -6,7 +6,9 @@ import { environment } from '../../environments/environment.development';
 })
 export class ConfigService {
   backend: string;
+  chatTimeFormat: string;
   constructor() {
     this.backend = environment.backend;
+    this.chatTimeFormat = "MMMM dd, YYYY HH:MM"
   }
 }

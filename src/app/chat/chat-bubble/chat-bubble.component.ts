@@ -1,19 +1,24 @@
 import { Component, Input } from '@angular/core';
 import { MessageDTO } from '../../core/models/message';
 import { TokenService } from '../../core/services/token/token.service';
+import { ConfigService } from '../../shared/config.service';
 
 @Component({
   selector: 'app-chat-bubble',
   templateUrl: './chat-bubble.component.html',
-  styleUrl: './chat-bubble.component.scss'
+  styleUrl: './chat-bubble.component.scss',
 })
 export class ChatBubbleComponent {
-  @Input() message!:MessageDTO;
+  @Input() message!: MessageDTO;
   @Input() isLast = false;
 
-  userId:string;
-
-  constructor(private tokenService:TokenService) {
+  userId: string;
+  timeFormat:string;
+  constructor(
+    private tokenService: TokenService,
+    public configService: ConfigService
+  ) {
+    this.timeFormat = configService.chatTimeFormat;
     this.userId = tokenService.getUsreId();
   }
 }
