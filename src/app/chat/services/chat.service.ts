@@ -23,6 +23,7 @@ import {
 import { UsersService } from '../../core/services/users/users.service';
 import { TokenService } from '../../core/services/token/token.service';
 import { ChatDbService } from './chat-db.service';
+import { ChatApiService } from './chat-api.service';
 
 @Injectable({
   providedIn: 'root',
@@ -39,7 +40,8 @@ export class ChatService implements OnDestroy {
     private wsService: WebsocketsService,
     private tokenService: TokenService,
     private chatDb: ChatDbService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private chatApi: ChatApiService
   ) {
     console.log('ChatService Initialized...............');
     const newMessageSub = this.wsService
@@ -48,10 +50,29 @@ export class ChatService implements OnDestroy {
       .subscribe();
     this.subs.add(newMessageSub);
     this.initWebSocket();
+    setTimeout(() => this.getNewMessages(),1000);
+  }
+
+  getNewMessages() {
+    this.chatApi
+      .getNewMessages()
+      .pipe(
+        filter((messages) => messages.length > 0),
+        tap((messages) => {
+          console.log('New Messages:', messages);
+          messages.forEach((message) => {
+            this._handleIncomingMessage(message).subscribe();
+          });
+          this.wsService.sendMessageUpdateDelivered(
+            messages[messages.length - 1]
+          );
+        })
+      )
+      .subscribe();
   }
 
   initWebSocket() {
-    this.wsService.initializeWebSocketConnection();
+    return this.wsService.initializeWebSocketConnection();
   }
 
   setActiveChat(chat: ChatListItem): void {
@@ -159,7 +180,8 @@ export class ChatService implements OnDestroy {
             filter((activeChat) => Boolean(activeChat)),
             map((activeChat) => activeChat as ChatListItem),
             tap((activeChat) => {
-              if (activeChat?.id == message.receiverId) {//active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
+              if (activeChat?.id == message.receiverId) {
+                //active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
                 this._activeChatModifySubject.next(true);
               }
             })

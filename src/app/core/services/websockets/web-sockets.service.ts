@@ -32,14 +32,14 @@ export class WebsocketsService {
       const token = this.tokenService.getToken();
       const ws = new SockJS(`${this.serverUrl}?access_token=Bearer ${token}`);
       this.stompClient = Stomp.over(ws);
-      this.connectSocket();
+      return this.connectSocket();
     } catch (error: unknown) {
       throw error;
     }
   }
 
   connectSocket() {
-    this.stompClient.connect({
+   return this.stompClient.connect({
        }, ()=>this.subscribeEndpoints(), this.errorCallBack);
   }
 
@@ -54,22 +54,46 @@ export class WebsocketsService {
          const parsedMessage:MessageDTO = JSON.parse(jsonBody);
          console.debug(`Received message: ${JSON.stringify(parsedMessage, null, 2)}`);
          this.onIncomingMessageSubject.next(parsedMessage);
-         this.sendMessageUpdate(parsedMessage);
+         this.sendMessageUpdateDelivered(parsedMessage);
        }
      );
 
     //  subscribe to message updates
-       const messageUpdateEndpoint =  `/topic/message.updates/${this.userId}`;
+    const messageUpdateSentEndpoint =  `/topic/message.updates.delivered.sent/${this.userId}`;
+    this.stompClient.subscribe(
+      messageUpdateSentEndpoint,
+        (message: IMessage): void => {
+          const decoder = new TextDecoder('utf-8');
+          const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+          const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
+          console.debug(`Received sent message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+          this.onIncomingMessageUpdateSubject.next(parsedMessage);
+        }
+      );
+
+       const messageUpdateDeliveredEndpoint =  `/topic/message.updates.delivered/${this.userId}`;
         this.stompClient.subscribe(
-          messageUpdateEndpoint,
+          messageUpdateDeliveredEndpoint,
             (message: IMessage): void => {
               const decoder = new TextDecoder('utf-8');
               const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
               const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
-              console.debug(`Received message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+              console.debug(`Received delivered message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
               this.onIncomingMessageUpdateSubject.next(parsedMessage);
             }
           );
+
+          const messageUpdateReadEndpoint =  `/topic/message.updates.read/${this.userId}`;
+          this.stompClient.subscribe(
+            messageUpdateReadEndpoint,
+              (message: IMessage): void => {
+                const decoder = new TextDecoder('utf-8');
+                const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+                const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
+                console.debug(`Received read message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+                this.onIncomingMessageUpdateSubject.next(parsedMessage);
+              }
+            );
 
   }
 
@@ -86,15 +110,32 @@ export class WebsocketsService {
   }
 
 
-  sendMessageUpdate(message:MessageDTO){
+  sendMessageUpdateDelivered(message:MessageDTO){
     const messageUpdate:MessageUpdateDTO = {
       status: MessageStatus.DELIVERED,
+      messageId: message.messageId as string
+    };
+    console.debug(`Sending message delivered update: ${JSON.stringify(messageUpdate, null, 2)}`);
+    try {
+      this.stompClient.send(
+        '/app/chat/message.updates.delivered', {}, JSON.stringify(messageUpdate)
+      );
+    } catch (error: unknown) {
+      throw error;
+    }
+
+  }
+
+
+  sendMessageUpdateRead(message:MessageDTO){
+    const messageUpdate:MessageUpdateDTO = {
+      status: MessageStatus.READ,
       messageId: message.messageId as string
     };
     console.debug(`Sending message update: ${JSON.stringify(messageUpdate, null, 2)}`);
     try {
       this.stompClient.send(
-        '/app/chat/message.updates', {}, JSON.stringify(messageUpdate)
+        '/app/chat/message.updates.read', {}, JSON.stringify(messageUpdate)
       );
     } catch (error: unknown) {
       throw error;
