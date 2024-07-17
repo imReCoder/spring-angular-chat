@@ -61,7 +61,7 @@ export class ChatWindowComponent implements OnDestroy {
           console.log('New Message:', message);
           this.allChats = [...this.allChats, message];
         }),
-        debounceTime(100),
+        debounceTime(100),//wait for 100ms before marking the chat as read
         tap(() =>  this.chatService.markChatItemAsRead(this.activeChat as ChatListItem))
       )
       .subscribe();

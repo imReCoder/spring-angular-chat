@@ -100,9 +100,13 @@ export class ChatDbService {
   }
 
   addMessageAsync(message: MessageDTO) {
-    console.log('Adding Message to DB...............', message);
     const id = `${message.senderId}_${message.receiverId}`;
     return firstValueFrom(this.indexDb.update(this._chatsStore, {...message ,senderId_receiverId:id}));
+  }
+
+  addMessage$(message: MessageDTO) {
+    const id = `${message.senderId}_${message.receiverId}`;
+    return this.indexDb.update(this._chatsStore, {...message ,senderId_receiverId:id});
   }
 
   addUserAsync(user: User) {
@@ -110,12 +114,17 @@ export class ChatDbService {
     return firstValueFrom(this.indexDb.update(this._usersStore, user));
   }
 
+  addUser$(user: User) {
+    console.log('Adding User to DB...............', user);
+    return this.indexDb.update(this._usersStore, user);
+  }
+
   addChatListItemAsync(chatListItem: ChatListItem) {
     console.log('Adding Chat List to DB...............', chatListItem);
     return firstValueFrom(this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true))));
   }
 
-  addChatListItem(chatListItem: ChatListItem) {
+  addChatListItem$(chatListItem: ChatListItem) {
     return this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true)));
   }
 

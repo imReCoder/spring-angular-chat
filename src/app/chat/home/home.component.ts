@@ -31,7 +31,7 @@ export class HomeComponent {
       })
       .onClose.subscribe((user) => {
        const chatListItemSub =  this.chatDbService
-          .addChatListItem({
+          .addChatListItem$({
             ...user,
             lastMessage: '',
             lastMessageTimestamp: Date.now(),

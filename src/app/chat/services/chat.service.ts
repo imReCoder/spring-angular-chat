@@ -1,5 +1,14 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import {
+  BehaviorSubject,
+  Subject,
+  catchError,
+  iif,
+  of,
+  pipe,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { WebsocketsService } from '../../core/services/websockets/web-sockets.service';
 import { MessageDTO } from '../../core/models/message';
@@ -13,7 +22,7 @@ import { ChatDbService } from './chat-db.service';
 export class ChatService {
   activeChat$ = new BehaviorSubject<ChatListItem | null>(null);
   userId = this.tokenService.getUsreId();
-  onNewMessageSubject =new Subject<MessageDTO>();
+  onNewMessageSubject = new Subject<MessageDTO>();
   constructor(
     private wsService: WebsocketsService,
     private tokenService: TokenService,
@@ -21,39 +30,44 @@ export class ChatService {
     private usersService: UsersService
   ) {
     console.log('ChatService Initialized...............');
-    this.wsService.onIncomingMessage$().subscribe(async(message) => {
-      await this.chatDb.addMessageAsync(message);
-      this.onNewMessageSubject.next(message);
-      this.chatDb
-        .isUserIdPresentInChatList(message.senderId)
-        .subscribe(async (isPresent) => {
-          console.log('isPresent:', isPresent);
-
-          if (!isPresent) {
-            this.usersService
-              .getUserById(message.senderId)
-              .subscribe(async (user) => {
-                await this.chatDb.addUserAsync(user);
-                const chatListItem: ChatListItem = {
-                  ...user,
+    this.wsService
+      .onIncomingMessage$()
+      .pipe(
+        switchMap((message) =>
+          this.chatDb.addMessage$(message).pipe(
+            tap(() => this.onNewMessageSubject.next(message)),
+            switchMap(() =>
+              this.chatDb.isUserIdPresentInChatList(message.senderId)
+            ),
+            tap((isPresent) =>
+              iif(
+                () => !isPresent,
+                this.usersService.getUserById(message.senderId).pipe(
+                  switchMap((user) =>
+                    this.chatDb.addUser$(user).pipe(
+                      switchMap(() => {
+                        const chatListItem = {
+                          ...user,
+                          lastMessage: message.content,
+                          lastMessageTimestamp: message.timestamp,
+                          unread: 1,
+                        };
+                        return this.chatDb.addChatListItem$(chatListItem);
+                      })
+                    )
+                  )
+                ),
+                this.chatDb.updateChatListItem(isPresent.id as string, {
                   lastMessage: message.content,
                   lastMessageTimestamp: message.timestamp,
-                  unread: 1,
-                };
-                await this.chatDb.addChatListItemAsync(chatListItem);
-              });
-          }
-
-          if(isPresent){
-            await this.chatDb.updateChatListItem(isPresent.id as string, {
-              lastMessage: message.content,
-              lastMessageTimestamp: message.timestamp,
-              unread: isPresent.unread + 1,
-            });
-          }
-        });
-      console.log('Incoming Message:', message);
-    });
+                  unread: isPresent.unread + 1,
+                })
+              )
+            )
+          )
+        )
+      )
+      .subscribe();
     this.initWebSocket();
   }
 
@@ -88,7 +102,7 @@ export class ChatService {
     return this.chatDb.markChatItemAsReadAsync(chatListItem);
   }
 
-  getActiveChatMessages$(activeChat:ChatListItem) {
+  getActiveChatMessages$(activeChat: ChatListItem) {
     // activeChat.id will always belongs to remote user
     return this.chatDb.getChatMessages(activeChat.id as string, this.userId);
   }
