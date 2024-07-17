@@ -59,7 +59,7 @@ export class WebsocketsService {
      );
 
     //  subscribe to message updates
-    const messageUpdateSentEndpoint =  `/topic/message.updates.delivered.sent/${this.userId}`;
+    const messageUpdateSentEndpoint =  `/topic/message.updates.sent/${this.userId}`;
     this.stompClient.subscribe(
       messageUpdateSentEndpoint,
         (message: IMessage): void => {
