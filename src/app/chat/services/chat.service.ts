@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import {
   BehaviorSubject,
   Subject,
+  Subscription,
   catchError,
   iif,
   of,
@@ -19,10 +20,13 @@ import { ChatDbService } from './chat-db.service';
 @Injectable({
   providedIn: 'root',
 })
-export class ChatService {
+export class ChatService implements OnDestroy{
   activeChat$ = new BehaviorSubject<ChatListItem | null>(null);
   userId = this.tokenService.getUsreId();
   onNewMessageSubject = new Subject<MessageDTO>();
+
+  private subs = new Subscription();
+
   constructor(
     private wsService: WebsocketsService,
     private tokenService: TokenService,
@@ -30,44 +34,11 @@ export class ChatService {
     private usersService: UsersService
   ) {
     console.log('ChatService Initialized...............');
-    this.wsService
+    const newMessageSub = this.wsService
       .onIncomingMessage$()
-      .pipe(
-        switchMap((message) =>
-          this.chatDb.addMessage$(message).pipe(
-            tap(() => this.onNewMessageSubject.next(message)),
-            switchMap(() =>
-              this.chatDb.isUserIdPresentInChatList(message.senderId)
-            ),
-            tap((isPresent) =>
-              iif(
-                () => !isPresent,
-                this.usersService.getUserById(message.senderId).pipe(
-                  switchMap((user) =>
-                    this.chatDb.addUser$(user).pipe(
-                      switchMap(() => {
-                        const chatListItem = {
-                          ...user,
-                          lastMessage: message.content,
-                          lastMessageTimestamp: message.timestamp,
-                          unread: 1,
-                        };
-                        return this.chatDb.addChatListItem$(chatListItem);
-                      })
-                    )
-                  )
-                ),
-                this.chatDb.updateChatListItem(isPresent.id as string, {
-                  lastMessage: message.content,
-                  lastMessageTimestamp: message.timestamp,
-                  unread: isPresent.unread + 1,
-                })
-              )
-            )
-          )
-        )
-      )
+      .pipe(switchMap(this._handleIncomingMessage))
       .subscribe();
+    this.subs.add(newMessageSub);
     this.initWebSocket();
   }
 
@@ -110,4 +81,45 @@ export class ChatService {
   onNewMessage$() {
     return this.onNewMessageSubject.asObservable();
   }
+
+  private _handleIncomingMessage(message: MessageDTO) {
+    return this.chatDb.addMessage$(message).pipe(
+      tap(() => this.onNewMessageSubject.next(message)),
+      switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
+      tap((isPresent) =>
+        iif(
+          () => Boolean(isPresent),
+          this.chatDb.updateChatListItem(isPresent.id as string, {
+            lastMessage: message.content,
+            lastMessageTimestamp: message.timestamp,
+            unread: isPresent.unread + 1,
+          }),
+          this._handleNewChatListItem(message)
+        )
+      )
+    );
+  }
+
+  private _handleNewChatListItem(message: MessageDTO) {
+    return this.usersService.getUserById(message.senderId).pipe(
+      switchMap((user) =>
+        this.chatDb.addUser$(user).pipe(
+          switchMap(() => {
+            const chatListItem = {
+              ...user,
+              lastMessage: message.content,
+              lastMessageTimestamp: message.timestamp,
+              unread: 1,
+            };
+            return this.chatDb.addChatListItem$(chatListItem);
+          })
+        )
+      )
+    );
+  }
+
+  ngOnDestroy(): void {
+   this.subs.unsubscribe();
+  }
+
 }
