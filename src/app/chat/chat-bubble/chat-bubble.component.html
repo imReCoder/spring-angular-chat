@@ -2,9 +2,12 @@
   <div class="message" [class.last]="isLast">
     {{message.content}}
    </div>
-   <div class="info text-[10px]">
+   <div class="info d-flex text-[10px]">
     <div class="time">
       {{message.timestamp | date:timeFormat}}
+    </div>
+    <div class="status">
+      {{message.status}}
     </div>
   </div>
 </div>

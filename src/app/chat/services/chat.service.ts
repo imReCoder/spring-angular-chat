@@ -4,7 +4,10 @@ import {
   Subject,
   Subscription,
   catchError,
+  filter,
   iif,
+  map,
+  mergeMap,
   of,
   pipe,
   switchMap,
@@ -12,7 +15,11 @@ import {
 } from 'rxjs';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { WebsocketsService } from '../../core/services/websockets/web-sockets.service';
-import { MessageDTO } from '../../core/models/message';
+import {
+  MessageDTO,
+  MessageStatus,
+  MessageUpdateDTO,
+} from '../../core/models/message';
 import { UsersService } from '../../core/services/users/users.service';
 import { TokenService } from '../../core/services/token/token.service';
 import { ChatDbService } from './chat-db.service';
@@ -24,6 +31,7 @@ export class ChatService implements OnDestroy {
   activeChat$ = new BehaviorSubject<ChatListItem | null>(null);
   userId = this.tokenService.getUsreId();
   onNewMessageSubject = new Subject<MessageDTO>();
+  public _activeChatModifySubject = new BehaviorSubject<boolean>(false);
 
   private subs = new Subscription();
 
@@ -60,6 +68,8 @@ export class ChatService implements OnDestroy {
       senderId: this.userId,
       content: message,
       timestamp: Date.now(),
+      messageClientId: `${this.userId}_${to}_${Date.now()}`,
+      status: MessageStatus.QUEUED,
     };
   }
 
@@ -82,7 +92,6 @@ export class ChatService implements OnDestroy {
     return this.onNewMessageSubject.asObservable();
   }
 
-
   // update chat list item based on the active chat , if its active chat then make unread 0
   updateChatListItem$(
     remoteUserId: string,
@@ -90,15 +99,15 @@ export class ChatService implements OnDestroy {
   ) {
     return this.getActiveChat$().pipe(
       tap((activeChat) => console.log('Active Chat:', activeChat)),
-      switchMap((activeChat) =>{
+      switchMap((activeChat) => {
         const chatItemUpdate = {
           ...chatListItemChanges,
-          unread: activeChat?.id === remoteUserId ? 0 : chatListItemChanges.unread,
-        }
+          unread:
+            activeChat?.id === remoteUserId ? 0 : chatListItemChanges.unread,
+        };
         console.log('Chat Item Update:', chatItemUpdate);
         return this.chatDb.updateChatListItem$(remoteUserId, chatItemUpdate);
-      }
-      )
+      })
     );
   }
 
@@ -108,15 +117,13 @@ export class ChatService implements OnDestroy {
       switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
       tap((isPresent) => console.log('Is Present:', isPresent)),
       switchMap((isPresent) =>
-        iif(
-          () => Boolean(isPresent),
-          this.updateChatListItem$(isPresent.id as string, {
-            lastMessage: message.content,
-            lastMessageTimestamp: message.timestamp,
-            unread: isPresent.unread + 1,
-          }),
-          this._handleNewChatListItem(message)
-        )
+        isPresent
+          ? this.updateChatListItem$(isPresent.id as string, {
+              lastMessage: message.content,
+              lastMessageTimestamp: message.timestamp,
+              unread: isPresent.unread + 1,
+            })
+          : this._handleNewChatListItem(message)
       )
     );
   }
@@ -137,6 +144,36 @@ export class ChatService implements OnDestroy {
         )
       )
     );
+  }
+
+  updateMessageStatus$(messageUpdate: MessageUpdateDTO) {
+    return this.chatDb
+      .getChatMessageByMessageClientId(messageUpdate.messageClientId as string)
+      .pipe(
+        mergeMap((message) =>
+          this.chatDb.addMessage$({
+            ...message,
+            status: messageUpdate.status,
+            messageId: messageUpdate.messageId ?? message.messageId,
+          })
+        ),
+        switchMap((message) =>
+          this.getActiveChat$().pipe(
+            filter((activeChat) => Boolean(activeChat)),
+            map((activeChat) => activeChat as ChatListItem),
+            tap((activeChat) => {
+              console.log('Active Chat before modify:', activeChat,message);
+              if (activeChat?.id == message.receiverId) {//active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
+                this._activeChatModifySubject.next(true);
+              }
+            })
+          )
+        )
+      );
+  }
+
+  activeChatModify$() {
+    return this._activeChatModifySubject.asObservable();
   }
 
   ngOnDestroy(): void {

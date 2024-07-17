@@ -1,3 +1,4 @@
+import { MessageStatus } from './../../core/models/message';
 import { Component, Input } from '@angular/core';
 import { MessageDTO } from '../../core/models/message';
 import { TokenService } from '../../core/services/token/token.service';
@@ -9,6 +10,7 @@ import { ConfigService } from '../../shared/config.service';
   styleUrl: './chat-bubble.component.scss',
 })
 export class ChatBubbleComponent {
+  MessageStatus = MessageStatus;
   @Input() message!: MessageDTO;
   @Input() isLast = false;
 

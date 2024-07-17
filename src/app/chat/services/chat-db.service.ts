@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { MessageDTO } from '../../core/models/message';
+import { MessageDTO, MessageUpdateDTO } from '../../core/models/message';
 import { BehaviorSubject, Subject, map, merge, reduce, switchMap, tap, pipe, firstValueFrom } from 'rxjs';
 import { User } from '../../core/models/user';
 import { ChatListItem } from '../../core/models/chat-list-item';
@@ -30,6 +30,7 @@ export class ChatDbService {
         },
         { name: 'content', keypath: 'message', options: { unique: false } },
         { name: 'timestamp', keypath: 'timestamp', options: { unique: false } },
+        { name: 'messageClientId', keypath: 'messageClientId', options: { unique: false } },
         { name: 'senderId_receiverId', keypath: 'senderId_receiverId', options: { unique: false } }
 
       ],
@@ -168,9 +169,15 @@ export class ChatDbService {
     const sentByYouKeyRange = IDBKeyRange.bound(sentByYouId,sentByYouId);
     const sentByMeKeyRange = IDBKeyRange.bound(sentByMeId,sentByMeId);
 
-    const sentByYouMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByYouKeyRange).pipe(tap((d)=>console.log("By You ",d)));
-    const sentByMeMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByMeKeyRange).pipe(tap((d)=>console.log("By me ",d)));
+    const sentByYouMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByYouKeyRange);
+    const sentByMeMessages = this.indexDb.getAllByIndex<MessageDTO>(this._chatsStore,'senderId_receiverId',sentByMeKeyRange);
 
     return merge(sentByYouMessages,sentByMeMessages).pipe(reduce((a,b)=>a.concat(b)),map((messages)=>messages.sort((a:MessageDTO,b:MessageDTO)=>a.timestamp - b.timestamp)));
   }
+
+  getChatMessageById$(messageId:string){}
+  getChatMessageByMessageClientId(messageClientId:string){
+    return this.indexDb.getByIndex<MessageDTO>(this._chatsStore,'messageClientId',messageClientId);
+  }
+
 }

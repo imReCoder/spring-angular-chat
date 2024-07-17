@@ -13,6 +13,7 @@ import { ChatItemComponent } from './chat-item/chat-item.component';
 import { UserAvatarComponent } from './user-avatar/user-avatar.component';
 import { ChatService } from './services/chat.service';
 import { ChatBubbleComponent } from './chat-bubble/chat-bubble.component';
+import { MessageUpdateService } from './services/message-update.service';
 
 
 @NgModule({
@@ -33,7 +34,8 @@ import { ChatBubbleComponent } from './chat-bubble/chat-bubble.component';
   ],
   providers: [
     ChatDbService,
-    ChatService
+    ChatService,
+    MessageUpdateService
   ]
 })
 export class ChatModule { }

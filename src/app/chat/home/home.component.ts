@@ -7,6 +7,7 @@ import { ChatDbService } from '../services/chat-db.service';
 import { ChatService } from '../services/chat.service';
 import { Subscription, map, switchMap, tap } from 'rxjs';
 import { ChatListItem } from '../../core/models/chat-list-item';
+import { MessageUpdateService } from '../services/message-update.service';
 
 @Component({
   selector: 'app-home',
@@ -20,7 +21,8 @@ export class HomeComponent {
     private userService: UsersService,
     private dialogService: DialogService,
     private chatDbService: ChatDbService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private messageUpdateService:MessageUpdateService
   ) {}
 
   newChatDialog() {
