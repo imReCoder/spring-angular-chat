@@ -49,7 +49,7 @@ export class WebsocketsService {
           const decoder = new TextDecoder('utf-8');
           const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
           const parsedMessage:MessageDTO = JSON.parse(jsonBody);
-
+          console.debug(`Received message: ${JSON.stringify(parsedMessage, null, 2)}`);
           this.onIncomingMessageSubject.next(parsedMessage);
         }
       );

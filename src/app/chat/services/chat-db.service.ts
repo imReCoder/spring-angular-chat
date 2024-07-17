@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { MessageDTO } from '../../core/models/message';
-import { BehaviorSubject, Subject, firstValueFrom, map, merge, reduce, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, Subject, map, merge, reduce, switchMap, tap, pipe, firstValueFrom } from 'rxjs';
 import { User } from '../../core/models/user';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { Message } from '@stomp/stompjs';
@@ -110,17 +110,14 @@ export class ChatDbService {
   }
 
   addUserAsync(user: User) {
-    console.log('Adding User to DB...............', user);
     return firstValueFrom(this.indexDb.update(this._usersStore, user));
   }
 
   addUser$(user: User) {
-    console.log('Adding User to DB...............', user);
     return this.indexDb.update(this._usersStore, user);
   }
 
   addChatListItemAsync(chatListItem: ChatListItem) {
-    console.log('Adding Chat List to DB...............', chatListItem);
     return firstValueFrom(this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true))));
   }
 
@@ -131,21 +128,23 @@ export class ChatDbService {
 
 
   getChatListItemByRemoteUserId(remoteUserId: string) {
-    console.log('Getting Chat List Item from DB...............', remoteUserId);
     return firstValueFrom(this.indexDb.getByIndex<ChatListItem>(this._chatListStore, 'id', remoteUserId));
   }
 
-  updateChatListItem(remoteUserId:string,chatListItemChanges:Partial<ChatListItem>){
+  getChatListItemByRemoteUserId$(remoteUserId: string) {
+    return this.indexDb.getByIndex<ChatListItem>(this._chatListStore, 'id', remoteUserId);
+  }
+
+  updateChatListItem$(remoteUserId:string,chatListItemChanges:Partial<ChatListItem>,t?:number){
     // get chat list item and update unread count;
-    console.log('Updating Chat List Item...............',remoteUserId);
-    return this.getChatListItemByRemoteUserId(remoteUserId).then((chatListItem)=>{
-      chatListItem.unread = chatListItem.unread + 1;
-      return this.addChatListItemAsync({...chatListItem,...chatListItemChanges});
-    });
+    console.log('Updating Chat List Item for user...............',remoteUserId,"T:",t);
+    return this.getChatListItemByRemoteUserId$(remoteUserId).pipe(
+      map((chatListItem)=>({...chatListItem,...chatListItemChanges})),
+      switchMap((chatListItem)=>this.addChatListItem$(chatListItem))
+    )
   }
 
   getChatList$() {
-    console.log('Getting Chat List from DB...............');
     return this.indexDb.getAll<ChatListItem>(this._chatListStore);
   }
 
@@ -158,7 +157,6 @@ export class ChatDbService {
   }
 
   markChatItemAsReadAsync(chatListItem:ChatListItem){
-    console.log('Marking Chat Item as Read...............',chatListItem.id);
     chatListItem.unread = 0;
     return firstValueFrom(this.indexDb.update(this._chatListStore,chatListItem).pipe(tap(()=>this._chatListModifySubject.next(true))));
   }
@@ -166,7 +164,6 @@ export class ChatDbService {
   getChatMessages(remoteUserId:string,currentUserId:string){
     const sentByYouId = `${remoteUserId}_${currentUserId}`;
     const sentByMeId = `${currentUserId}_${remoteUserId}`;
-    console.log('Getting Chat Messages...............',sentByYouId,sentByMeId);
 
     const sentByYouKeyRange = IDBKeyRange.bound(sentByYouId,sentByYouId);
     const sentByMeKeyRange = IDBKeyRange.bound(sentByMeId,sentByMeId);

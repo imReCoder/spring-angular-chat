@@ -20,7 +20,7 @@ import { ChatDbService } from './chat-db.service';
 @Injectable({
   providedIn: 'root',
 })
-export class ChatService implements OnDestroy{
+export class ChatService implements OnDestroy {
   activeChat$ = new BehaviorSubject<ChatListItem | null>(null);
   userId = this.tokenService.getUsreId();
   onNewMessageSubject = new Subject<MessageDTO>();
@@ -36,7 +36,7 @@ export class ChatService implements OnDestroy{
     console.log('ChatService Initialized...............');
     const newMessageSub = this.wsService
       .onIncomingMessage$()
-      .pipe(switchMap(this._handleIncomingMessage))
+      .pipe(switchMap((message) => this._handleIncomingMessage(message)))
       .subscribe();
     this.subs.add(newMessageSub);
     this.initWebSocket();
@@ -82,14 +82,35 @@ export class ChatService implements OnDestroy{
     return this.onNewMessageSubject.asObservable();
   }
 
+
+  // update chat list item based on the active chat , if its active chat then make unread 0
+  updateChatListItem$(
+    remoteUserId: string,
+    chatListItemChanges: Partial<ChatListItem>
+  ) {
+    return this.getActiveChat$().pipe(
+      tap((activeChat) => console.log('Active Chat:', activeChat)),
+      switchMap((activeChat) =>{
+        const chatItemUpdate = {
+          ...chatListItemChanges,
+          unread: activeChat?.id === remoteUserId ? 0 : chatListItemChanges.unread,
+        }
+        console.log('Chat Item Update:', chatItemUpdate);
+        return this.chatDb.updateChatListItem$(remoteUserId, chatItemUpdate);
+      }
+      )
+    );
+  }
+
   private _handleIncomingMessage(message: MessageDTO) {
     return this.chatDb.addMessage$(message).pipe(
       tap(() => this.onNewMessageSubject.next(message)),
       switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
-      tap((isPresent) =>
+      tap((isPresent) => console.log('Is Present:', isPresent)),
+      switchMap((isPresent) =>
         iif(
           () => Boolean(isPresent),
-          this.chatDb.updateChatListItem(isPresent.id as string, {
+          this.updateChatListItem$(isPresent.id as string, {
             lastMessage: message.content,
             lastMessageTimestamp: message.timestamp,
             unread: isPresent.unread + 1,
@@ -119,7 +140,6 @@ export class ChatService implements OnDestroy{
   }
 
   ngOnDestroy(): void {
-   this.subs.unsubscribe();
+    this.subs.unsubscribe();
   }
-
 }
