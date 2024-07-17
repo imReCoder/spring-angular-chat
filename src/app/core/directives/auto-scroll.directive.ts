@@ -29,7 +29,6 @@ export class AutoScrollDirective  {
 
   private scrollToBottom(): void {
     try {
-      console.log('Scrolling to bottom');
       setTimeout(() => {
       this.el.nativeElement.scrollTop = this.el.nativeElement.scrollHeight;
       },0)

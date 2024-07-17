@@ -175,7 +175,9 @@ export class ChatDbService {
     return merge(sentByYouMessages,sentByMeMessages).pipe(reduce((a,b)=>a.concat(b)),map((messages)=>messages.sort((a:MessageDTO,b:MessageDTO)=>a.timestamp - b.timestamp)));
   }
 
-  getChatMessageById$(messageId:string){}
+  getChatMessageById$(messageId:string){
+    return this.indexDb.getByIndex<MessageDTO>(this._chatsStore,'messageId',messageId);
+  }
   getChatMessageByMessageClientId(messageClientId:string){
     return this.indexDb.getByIndex<MessageDTO>(this._chatsStore,'messageClientId',messageClientId);
   }

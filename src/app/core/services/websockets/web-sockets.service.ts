@@ -40,7 +40,7 @@ export class WebsocketsService {
 
   connectSocket() {
     this.stompClient.connect({
-       }, this.subscribeEndpoints.bind(this), this.errorCallBack);
+       }, ()=>this.subscribeEndpoints(), this.errorCallBack);
   }
 
   subscribeEndpoints(){

@@ -56,7 +56,6 @@ export class ChatWindowComponent implements OnDestroy {
   ) {
     this.activeChat$ = this.chatService.activeChatModify$().pipe(
       tap((modified) => {
-        console.log('Active Chat Modified:', modified);
         if(modified) {
         if (!this.isFirstModify) {
           this.audioService.messageStatusUpdateSound();
@@ -78,7 +77,6 @@ export class ChatWindowComponent implements OnDestroy {
             )
         ),
         tap((message) => {
-          console.log('New Message:', message);
           this.allChats = [...this.allChats, message];
         })
       )
@@ -89,14 +87,12 @@ export class ChatWindowComponent implements OnDestroy {
         filter((activeChat) => Boolean(activeChat)),
         map((activeChat) => activeChat as ChatListItem),
         tap((activeChat) => {
-          console.debug('Active Chat:', activeChat);
           this.activeChat = activeChat;
           this.chatService.markChatItemAsRead(this.activeChat);
         }),
         switchMap((activeChat) =>
           this.chatService.getActiveChatMessages$(activeChat).pipe(
             tap((messages) => {
-              console.log('Messages:', messages);
               this.allChats = [...messages];
               //  setTimeout(()=> this.scrollToBottom(), 200);
             })
@@ -112,7 +108,6 @@ export class ChatWindowComponent implements OnDestroy {
   sendMessage() {
     if (!this.activeChat) return console.error('No Active Chat');
     if (!this.inputMessage?.length) return console.error('No Message');
-    console.log('Sending Message:', this.inputMessage);
     const message = this.chatService.createMessage(
       this.inputMessage,
       this.activeChat.id as string
@@ -134,9 +129,6 @@ export class ChatWindowComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    //Called once, before the instance is destroyed.
-    //Add 'implements OnDestroy' to the class.
-    console.log('Destroying Chat Window');
     this.subs.unsubscribe();
   }
 }

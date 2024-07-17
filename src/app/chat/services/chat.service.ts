@@ -98,14 +98,12 @@ export class ChatService implements OnDestroy {
     chatListItemChanges: Partial<ChatListItem>
   ) {
     return this.getActiveChat$().pipe(
-      tap((activeChat) => console.log('Active Chat:', activeChat)),
       switchMap((activeChat) => {
         const chatItemUpdate = {
           ...chatListItemChanges,
           unread:
             activeChat?.id === remoteUserId ? 0 : chatListItemChanges.unread,
         };
-        console.log('Chat Item Update:', chatItemUpdate);
         return this.chatDb.updateChatListItem$(remoteUserId, chatItemUpdate);
       })
     );
@@ -115,7 +113,6 @@ export class ChatService implements OnDestroy {
     return this.chatDb.addMessage$(message).pipe(
       tap(() => this.onNewMessageSubject.next(message)),
       switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
-      tap((isPresent) => console.log('Is Present:', isPresent)),
       switchMap((isPresent) =>
         isPresent
           ? this.updateChatListItem$(isPresent.id as string, {
@@ -162,7 +159,6 @@ export class ChatService implements OnDestroy {
             filter((activeChat) => Boolean(activeChat)),
             map((activeChat) => activeChat as ChatListItem),
             tap((activeChat) => {
-              console.log('Active Chat before modify:', activeChat,message);
               if (activeChat?.id == message.receiverId) {//active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
                 this._activeChatModifySubject.next(true);
               }
