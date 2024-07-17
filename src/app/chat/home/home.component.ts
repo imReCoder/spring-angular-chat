@@ -5,6 +5,8 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { SearchUserComponent } from '../search-user/search-user.component';
 import { ChatDbService } from '../services/chat-db.service';
 import { ChatService } from '../services/chat.service';
+import { Subscription, map, switchMap, tap } from 'rxjs';
+import { ChatListItem } from '../../core/models/chat-list-item';
 
 @Component({
   selector: 'app-home',
@@ -12,38 +14,39 @@ import { ChatService } from '../services/chat.service';
   styleUrl: './home.component.scss',
 })
 export class HomeComponent {
+
+  private subs = new Subscription();
   constructor(
     private userService: UsersService,
     private dialogService: DialogService,
     private chatDbService: ChatDbService,
-    private chatService:ChatService
-  ) {
-      // this.chatService.sendMessage({
-      //     senderId: '102',
-      //     receiverId: '123',
-      //     content: 'Hello',
-      //     timestamp: Date.now(),
-      // })
-  }
+    private chatService: ChatService
+  ) {}
 
   newChatDialog() {
-    console.log('New Chat');
     this.dialogService
       .open(SearchUserComponent, {
         width: '60%',
         height: '80%',
       })
       .onClose.subscribe((user) => {
-        console.log('Selected User:', user);
-        this.chatDbService.addChatListItemAsync({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          profileImage: user.profileImage,
-          lastMessage: '',
-          lastMessageTimestamp: Date.now(),
-          unread: 0,
-        });
+       const chatListItemSub =  this.chatDbService
+          .addChatListItem({
+            ...user,
+            lastMessage: '',
+            lastMessageTimestamp: Date.now(),
+            unread: 0,
+          })
+          .pipe(
+            tap((activeChat) => {
+              this.chatService.setActiveChat(activeChat);
+            })
+          ).subscribe();
+          this.subs.add(chatListItemSub);
       });
+  }
+
+  ngOnDestroy(): void {
+      this.subs.unsubscribe();
   }
 }

@@ -115,6 +115,12 @@ export class ChatDbService {
     return firstValueFrom(this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true))));
   }
 
+  addChatListItem(chatListItem: ChatListItem) {
+    return this.indexDb.update(this._chatListStore, chatListItem).pipe(tap(() => this._chatListModifySubject.next(true)));
+  }
+
+
+
   getChatListItemByRemoteUserId(remoteUserId: string) {
     console.log('Getting Chat List Item from DB...............', remoteUserId);
     return firstValueFrom(this.indexDb.getByIndex<ChatListItem>(this._chatListStore, 'id', remoteUserId));

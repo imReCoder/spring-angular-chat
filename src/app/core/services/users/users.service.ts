@@ -5,6 +5,7 @@ import { User } from '../../models/user';
 import { ConfigService } from '../../../shared/config.service';
 import { IResponse } from '../../models/response';
 import { TokenService } from '../token/token.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,8 @@ export class UsersService {
   constructor(
     private httpClient: HttpClient,
     private config:ConfigService,
-    private tokenService:TokenService
+    private tokenService:TokenService,
+    private router:Router
   ) {
     console.debug('UsersService Initialized...............');
     this.getUser().subscribe({
@@ -24,7 +26,9 @@ export class UsersService {
         this.currentUser$.next(user);
       },
       error: (error: any) => {
-        console.error(`Error: ${error}`);
+        console.log(`Error: ${error}`);
+        this.tokenService.logout();
+        this.router.navigate(['/auth']);
       }
     });
   }
