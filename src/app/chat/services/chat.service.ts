@@ -53,6 +53,8 @@ export class ChatService implements OnDestroy {
     setTimeout(() => this.getNewMessages(),1000);
   }
 
+
+
   getNewMessages() {
     this.chatApi
       .getNewMessages()
@@ -130,6 +132,7 @@ export class ChatService implements OnDestroy {
     );
   }
 
+
   private _handleIncomingMessage(message: MessageDTO) {
     return this.chatDb.addMessage$(message).pipe(
       tap(() => this.onNewMessageSubject.next(message)),
@@ -164,7 +167,7 @@ export class ChatService implements OnDestroy {
     );
   }
 
-  updateMessageStatus$(messageUpdate: MessageUpdateDTO) {
+  updateMessageStatusByClientId$(messageUpdate: MessageUpdateDTO) {
     return this.chatDb
       .getChatMessageByMessageClientId(messageUpdate.messageClientId as string)
       .pipe(
@@ -175,19 +178,32 @@ export class ChatService implements OnDestroy {
             messageId: messageUpdate.messageId ?? message.messageId,
           })
         ),
-        switchMap((message) =>
-          this.getActiveChat$().pipe(
-            filter((activeChat) => Boolean(activeChat)),
-            map((activeChat) => activeChat as ChatListItem),
-            tap((activeChat) => {
-              if (activeChat?.id == message.receiverId) {
-                //active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
-                this._activeChatModifySubject.next(true);
-              }
-            })
-          )
-        )
+        switchMap((message) =>this.triggerActiveChatModifyIfRequired(message))
       );
+  }
+
+
+  updateAllPreviousMessagesByMessageId$(messageUpdate: MessageUpdateDTO) {
+    return this.chatDb.getChatMessageById$(messageUpdate.messageId as string).pipe(
+      switchMap((message) =>
+        this.chatDb.updateAllPreviousMessagesByMessageId$(messageUpdate).pipe(
+          switchMap(() => this.triggerActiveChatModifyIfRequired(message))
+        )
+      )
+    );
+  }
+
+  triggerActiveChatModifyIfRequired(message:MessageDTO){
+    return   this.getActiveChat$().pipe(
+      filter((activeChat) => Boolean(activeChat)),
+      map((activeChat) => activeChat as ChatListItem),
+      tap((activeChat) => {
+        if (activeChat?.id == message.receiverId) {
+          //active chat is remote id and all status updates will be coming for sent message , and in sent message remote id is receiver id
+          this._activeChatModifySubject.next(true);
+        }
+      })
+    )
   }
 
   activeChatModify$() {

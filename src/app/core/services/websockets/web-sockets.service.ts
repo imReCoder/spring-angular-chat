@@ -66,6 +66,7 @@ export class WebsocketsService {
           const decoder = new TextDecoder('utf-8');
           const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
           const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
+          parsedMessage.status = MessageStatus.SENT;
           console.debug(`Received sent message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
           this.onIncomingMessageUpdateSubject.next(parsedMessage);
         }
@@ -78,6 +79,7 @@ export class WebsocketsService {
               const decoder = new TextDecoder('utf-8');
               const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
               const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
+              parsedMessage.status = MessageStatus.DELIVERED;
               console.debug(`Received delivered message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
               this.onIncomingMessageUpdateSubject.next(parsedMessage);
             }
@@ -90,6 +92,7 @@ export class WebsocketsService {
                 const decoder = new TextDecoder('utf-8');
                 const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
                 const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
+                parsedMessage.status = MessageStatus.READ;
                 console.debug(`Received read message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
                 this.onIncomingMessageUpdateSubject.next(parsedMessage);
               }
