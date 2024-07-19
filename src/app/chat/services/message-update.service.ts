@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { WebsocketsService } from '../../core/services/websockets/web-sockets.service';
-import { Subscription, switchMap, tap } from 'rxjs';
+import { Subscription, concatMap, switchMap, tap } from 'rxjs';
 import { ChatService } from './chat.service';
 import { MessageStatus, MessageUpdateDTO } from '../../core/models/message';
 
@@ -12,7 +12,7 @@ export class MessageUpdateService implements OnDestroy {
   constructor(private ws: WebsocketsService, private chatService: ChatService) {
     const messageUpdateSub = this.ws
       .onIncomingMessageUpdate$()
-      .pipe(switchMap((message) => this._handleIncomingMessageUpdate(message)))
+      .pipe(concatMap((message) => this._handleIncomingMessageUpdate(message)))
       .subscribe();
 
     this.subs.add(messageUpdateSub);

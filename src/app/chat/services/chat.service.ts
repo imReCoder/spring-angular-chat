@@ -210,7 +210,7 @@ export class ChatService implements OnDestroy {
     return this.chatDb
       .getChatMessageById$(messageUpdate.messageId as string)
       .pipe(
-        switchMap((message) =>
+        concatMap((message) =>
           this.chatDb
             .updateAllPreviousSentMessagesStatusByMessageId$(messageUpdate)
             .pipe(
