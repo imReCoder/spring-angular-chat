@@ -5,7 +5,7 @@ import { AfterViewChecked, AfterViewInit, Directive, ElementRef, HostListener, I
 })
 export class AutoScrollDirective  {
   @Input() set messages(_: any[]) {
-    console.debug('Auto scroll enabled:', this.autoScrollEnabled);
+    // console.debug('Auto scroll enabled:', this.autoScrollEnabled);
     if (this.autoScrollEnabled) {
       this.scrollToBottom();
     }

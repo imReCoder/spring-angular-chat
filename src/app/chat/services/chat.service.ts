@@ -246,13 +246,11 @@ export class ChatService implements OnDestroy {
         take(1),
         switchMap((chatListItems)=>{
           return from(chatListItems).pipe(
-            tap((chatListItem)=>console.debug('Found Chat List Items:',chatListItem)),
             mergeMap((chatListItem)=>this.chatDb.getLastMessageByMeTo$(chatListItem.id as string)),
             filter((message)=>message.status !== MessageStatus.READ ),//if message is already read then no need to update
             // map it to create array of message ids
             map((message)=>message.messageId as string),
             toArray(),
-            tap((messageIds)=>console.debug('Message Ids for fetching status updates:',messageIds)),
             switchMap((messageIds)=>{
               if(messageIds.length === 0) return of([]);
               return this.chatApi.getMessagesLatestStatus$(messageIds)
@@ -261,7 +259,6 @@ export class ChatService implements OnDestroy {
           )
         }),
         switchMap((messageUpdates)=>{
-          console.debug('Message Updates Received:',messageUpdates);
           return from(messageUpdates).pipe(
             mergeMap((messageUpdate)=>this.updateAllPreviousMessagesByMessageId$(messageUpdate))
           )

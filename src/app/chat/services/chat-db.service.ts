@@ -304,7 +304,6 @@ export class ChatDbService {
   getAllReceivedMessageBefore$(messageId: string) {
     return this.getChatMessageById$(messageId).pipe(
       switchMap((message) => {
-        console.log('Message for udpate:', message);
         // create boundry by messageId and timestampl letss then equal to message.timestamp
         const id = `${message.receiverId}_${message.senderId}`;
         const bound = IDBKeyRange.bound(id, id);
