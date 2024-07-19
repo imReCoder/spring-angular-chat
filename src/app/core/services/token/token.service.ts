@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
 
-  constructor() { }
+  constructor(private router:Router) { }
 
   private token: string | null = null;
 
@@ -24,14 +25,12 @@ export class TokenService {
 
   getTokenData(): any {
     const token = this.getToken();
-    if(!token) return null;
     const tokenParts = token.split('.');
     return JSON.parse(atob(tokenParts[1]));
   }
 
-  getUsreId(){
+  getUsreId():string {
     const tokenData = this.getTokenData();
-    if(!tokenData) return null;
     return tokenData.sub;
   }
   setToken(token: string) {
@@ -39,10 +38,10 @@ export class TokenService {
     localStorage.setItem('token', token);
   }
 
-  getToken(): string | null {
+  getToken(): string  {
     const token = localStorage.getItem('token');
-    if(!this.validateToken(token)) return null;
-    return token
+   if(!this.validateToken(token)) this.router.navigate(['/auth']);
+    return token as string
   }
 
   logout() {

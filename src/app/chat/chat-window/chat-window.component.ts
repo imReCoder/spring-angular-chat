@@ -56,12 +56,12 @@ export class ChatWindowComponent implements OnDestroy {
   ) {
     this.activeChat$ = this.chatService.activeChatModify$().pipe(
       tap((modified) => {
-        if(modified) {
-        if (!this.isFirstModify) {
-          this.audioService.messageStatusUpdateSound();
+        if (modified) {
+          if (!this.isFirstModify) {
+            this.audioService.messageStatusUpdateSound();
+          }
+          this.isFirstModify = false;
         }
-        this.isFirstModify = false;
-      }
       }),
       switchMap(() => this.chatService.getActiveChat$())
     );
@@ -78,7 +78,8 @@ export class ChatWindowComponent implements OnDestroy {
         ),
         tap((message) => {
           this.allChats = [...this.allChats, message];
-        })
+        }),
+        switchMap((message) => this.markAllChatAsRead(message))
       )
       .subscribe();
 
@@ -86,23 +87,45 @@ export class ChatWindowComponent implements OnDestroy {
       .pipe(
         filter((activeChat) => Boolean(activeChat)),
         map((activeChat) => activeChat as ChatListItem),
-        tap((activeChat) => {
+        tap(async (activeChat) => {
+          console.debug('Active Chat:', activeChat);
           this.activeChat = activeChat;
-          this.chatService.markChatItemAsRead(this.activeChat);
+          await this.chatService.markChatItemAsRead(this.activeChat);
         }),
         switchMap((activeChat) =>
-          this.chatService.getActiveChatMessages$(activeChat).pipe(
-            tap((messages) => {
-              this.allChats = [...messages];
-              //  setTimeout(()=> this.scrollToBottom(), 200);
-            })
-          )
+          this.chatService
+            .getActiveChatMessages$(activeChat)
+            .pipe(
+              tap((messages) => {
+                this.allChats = [...messages];
+                //  setTimeout(()=> this.scrollToBottom(), 200);
+              }),
+              switchMap((messages) => {
+                const lastMessage = messages[messages.length - 1];
+                return this.markAllChatAsRead(lastMessage);
+              })
+            )
+
         )
       )
       .subscribe();
 
     this.subs.add(activeChatSub);
     this.subs.add(newMessageSub);
+  }
+
+  markAllChatAsRead(lastMessage: MessageDTO) {
+    console.log(
+      'Last Message:',
+      lastMessage,
+      this.userService.getCurrentUserId()
+    );
+    if (lastMessage?.senderId !== this.userService.getCurrentUserId()) {
+      console.log('Marking as Read:', this.activeChat);
+      return this.chatService.markChatsAsRead(this.activeChat as ChatListItem);
+    }
+    console.log('Last message is not present or is from current user');
+    return [];
   }
 
   sendMessage() {

@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { MessageDTO, MessageStatus, MessageUpdateDTO } from '../../core/models/message';
+import {
+  MessageDTO,
+  MessageStatus,
+  MessageUpdateDTO,
+} from '../../core/models/message';
 import {
   BehaviorSubject,
   Subject,
@@ -16,6 +20,7 @@ import {
 import { User } from '../../core/models/user';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { Message } from '@stomp/stompjs';
+import { UsersService } from '../../core/services/users/users.service';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +32,10 @@ export class ChatDbService {
 
   public _chatListModifySubject = new BehaviorSubject<boolean>(true);
 
-  constructor(private indexDb: NgxIndexedDBService) {
+  constructor(
+    private indexDb: NgxIndexedDBService,
+    private userService: UsersService
+  ) {
     console.log('ChatDbService Initialized...............', this._chatsStore);
     this.indexDb
       .createObjectStore({
@@ -153,6 +161,8 @@ export class ChatDbService {
     });
   }
 
+
+
   addUserAsync(user: User) {
     return firstValueFrom(this.indexDb.update(this._usersStore, user));
   }
@@ -195,15 +205,14 @@ export class ChatDbService {
 
   updateChatListItem$(
     remoteUserId: string,
-    chatListItemChanges: Partial<ChatListItem>,
-    t?: number
+    chatListItemChanges: Partial<ChatListItem>
   ) {
     // get chat list item and update unread count;
     console.log(
       'Updating Chat List Item for user...............',
       remoteUserId,
-      'T:',
-      t
+      'Changes:',
+      chatListItemChanges
     );
     return this.getChatListItemByRemoteUserId$(remoteUserId).pipe(
       map((chatListItem) => ({ ...chatListItem, ...chatListItemChanges })),
@@ -282,35 +291,114 @@ export class ChatDbService {
 
   getAllSentMessageBefore$(messageId: string) {
     return this.getChatMessageById$(messageId).pipe(
-      switchMap((message) =>{
+      switchMap((message) => {
         console.log('Message for udpate:', message);
         // create boundry by messageId and timestampl letss then equal to message.timestamp
         const id = `${message.senderId}_${message.receiverId}`;
         const bound = IDBKeyRange.bound(id, id);
-        return this.indexDb.getAllByIndex<MessageDTO>(
-          this._chatsStore,
-          'senderId_receiverId',
-          bound
-        ).pipe(
-          map((messages) => messages.filter((m) => m.timestamp <= message.timestamp))
-        )
-      }
-      ),
-
+        return this.indexDb
+          .getAllByIndex<MessageDTO>(
+            this._chatsStore,
+            'senderId_receiverId',
+            bound
+          )
+          .pipe(
+            map((messages) =>
+              messages.filter((m) => m.timestamp <= message.timestamp)
+            )
+          );
+      })
     );
   }
 
-  updateAllPreviousMessagesByMessageId$(message: MessageUpdateDTO) {
+  getAllReceivedMessageBefore$(messageId: string) {
+    return this.getChatMessageById$(messageId).pipe(
+      switchMap((message) => {
+        console.log('Message for udpate:', message);
+        // create boundry by messageId and timestampl letss then equal to message.timestamp
+        const id = `${message.receiverId}_${message.senderId}`;
+        const bound = IDBKeyRange.bound(id, id);
+        return this.indexDb
+          .getAllByIndex<MessageDTO>(
+            this._chatsStore,
+            'senderId_receiverId',
+            bound
+          )
+          .pipe(
+            map((messages) =>
+              messages.filter((m) => m.timestamp <= message.timestamp)
+            )
+          );
+      })
+    );
+  }
+
+
+  updateAllPreviousSentMessagesStatusByMessageId$(message: MessageUpdateDTO) {
     console.log('Updating all previous messages a:', message);
     return this.getAllSentMessageBefore$(message.messageId).pipe(
       switchMap((messages) => {
-        console.log('Messages to update:', messages);
+
+        console.log(`Found ${messages.length} messages to update`);
+        console.debug(`Last message: `, messages[messages.length - 1]);
+
         return forkJoin(
-         messages.map((m) => {
-          m.status = message.status;
-          return this.addMessage$(m);
-        }));
+          messages
+            .filter(
+              (m) =>
+                m.status ==
+                (message.status == MessageStatus.DELIVERED
+                  ? MessageStatus.SENT // if message is delivered then update only sent messages
+                  : MessageStatus.DELIVERED // if message is read then update only delivered messages
+                  )
+            )
+            .map((m) => {
+              m.status = message.status;
+              return this.addMessage$(m);
+            })
+        );
       })
     );
+  }
+
+  updateAllPreviousReceivedMessagesStatusByMessageId$(message: MessageUpdateDTO) {
+    console.log('Updating all previous messages a:', message);
+    return this.getAllReceivedMessageBefore$(message.messageId).pipe(
+      switchMap((messages) => {
+        console.log('Messages to update:', messages);
+        return forkJoin(
+          messages
+            .filter(
+              (m) =>
+                m.status ==
+                (message.status == MessageStatus.DELIVERED
+                  ? MessageStatus.SENT // if message is delivered then update only sent messages
+                  : MessageStatus.DELIVERED // if message is read then update only delivered messages
+                  )
+            )
+            .map((m) => {
+              m.status = message.status;
+              return this.addMessage$(m);
+            })
+        );
+      })
+    );
+  }
+  getLastMessageByRemoteUserId$(remoteUserId: string) {
+    const currentUserId = this.userService.getCurrentUserId();
+    const id = `${remoteUserId}_${currentUserId}`;
+    const bound = IDBKeyRange.bound(id, id);
+    return this.indexDb
+      .getAllByIndex<MessageDTO>(this._chatsStore, 'senderId_receiverId', bound)
+      .pipe(map((messages) => messages[messages.length - 1]));
+  }
+
+  getLastMessageByMeTo$(remoteUserId: string) {
+    const currentUserId = this.userService.getCurrentUserId();
+    const id = `${currentUserId}_${remoteUserId}`;
+    const bound = IDBKeyRange.bound(id, id);
+    return this.indexDb
+      .getAllByIndex<MessageDTO>(this._chatsStore, 'senderId_receiverId', bound)
+      .pipe(map((messages) => messages[messages.length - 1]));
   }
 }

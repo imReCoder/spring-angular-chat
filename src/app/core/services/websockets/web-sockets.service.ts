@@ -53,8 +53,8 @@ export class WebsocketsService {
          const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
          const parsedMessage:MessageDTO = JSON.parse(jsonBody);
          console.debug(`Received message: ${JSON.stringify(parsedMessage, null, 2)}`);
-         this.onIncomingMessageSubject.next(parsedMessage);
          this.sendMessageUpdateDelivered(parsedMessage);
+         this.onIncomingMessageSubject.next(parsedMessage);
        }
      );
 
@@ -67,7 +67,7 @@ export class WebsocketsService {
           const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
           const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
           parsedMessage.status = MessageStatus.SENT;
-          console.debug(`Received sent message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+          console.debug(`Received SENT message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
           this.onIncomingMessageUpdateSubject.next(parsedMessage);
         }
       );
@@ -80,7 +80,7 @@ export class WebsocketsService {
               const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
               const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
               parsedMessage.status = MessageStatus.DELIVERED;
-              console.debug(`Received delivered message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+              console.debug(`Received DELIVERED message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
               this.onIncomingMessageUpdateSubject.next(parsedMessage);
             }
           );
@@ -93,7 +93,7 @@ export class WebsocketsService {
                 const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
                 const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
                 parsedMessage.status = MessageStatus.READ;
-                console.debug(`Received read message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
+                console.debug(`Received READ message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
                 this.onIncomingMessageUpdateSubject.next(parsedMessage);
               }
             );

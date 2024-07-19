@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { ConfigService } from '../../shared/config.service';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs';
-import { MessageDTO } from '../../core/models/message';
+import { MessageDTO, MessageUpdateDTO } from '../../core/models/message';
 import { IResponse } from '../../core/models/response';
 
 @Injectable({
@@ -16,5 +16,9 @@ export class ChatApiService {
 
    getNewMessages(){
     return this.http.get<IResponse<MessageDTO[]>>(`${this.baseUrl}/undelivered`).pipe(map((res)=>res.data));
+   }
+
+   getMessagesLatestStatus$(messageIds:string[]){
+      return this.http.post<IResponse<MessageUpdateDTO[]>>(`${this.baseUrl}/latest-status`,{messageIds}).pipe(map((res)=>res.data));
    }
 }
