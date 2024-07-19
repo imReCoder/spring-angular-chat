@@ -10,7 +10,6 @@ import { MessageStatus, MessageUpdateDTO } from '../../core/models/message';
 export class MessageUpdateService implements OnDestroy {
   private subs = new Subscription();
   constructor(private ws: WebsocketsService, private chatService: ChatService) {
-    console.log('MessageUpdateService Initialized...............');
     const messageUpdateSub = this.ws
       .onIncomingMessageUpdate$()
       .pipe(switchMap((message) => this._handleIncomingMessageUpdate(message)))
@@ -26,6 +25,7 @@ export class MessageUpdateService implements OnDestroy {
       return this.chatService.updateMessageStatusByClientId$(messageUpdate);
     } else {
       // we will get the delivered or read update for last message only, so we need to update all previous messages with messageId
+
       return this.chatService.updateAllPreviousMessagesByMessageId$(
         messageUpdate
       );

@@ -47,7 +47,6 @@ export class ChatService implements OnDestroy {
     private usersService: UsersService,
     private chatApi: ChatApiService
   ) {
-    console.log('ChatService Initialized...............');
     const newMessageSub = this.wsService
       .onIncomingMessage$()
       .pipe(switchMap((message) => this._handleIncomingMessage(message)))
@@ -61,13 +60,11 @@ export class ChatService implements OnDestroy {
   }
 
   getNewMessages() {
-    console.log('Getting new messages');
     this.chatApi
       .getNewMessages()
       .pipe(
         filter((messages) => messages.length > 0),
         mergeMap((messages) => {
-          console.log('New Messages:', messages);
           return from(messages).pipe(
             concatMap((message)=>this._handleIncomingMessage(message)),
             toArray(),
@@ -123,7 +120,6 @@ export class ChatService implements OnDestroy {
       tap((lastMessage) => {
         if(!lastMessage) return console.debug("No messages found for chat item");
         if(lastMessage.status === MessageStatus.READ) return console.debug("All chats already marks read");
-        console.log('Last Message of active chat:', lastMessage);
          this.wsService.sendMessageUpdateRead(lastMessage);
          return this.chatDb.updateAllPreviousReceivedMessagesStatusByMessageId$({
           status: MessageStatus.READ,
@@ -149,7 +145,6 @@ export class ChatService implements OnDestroy {
   ) {
     return this.getActiveChat$().pipe(
       take(1),
-      tap((activeChat) => console.log('Active Chat In Update:', activeChat)),
       switchMap((activeChat) => {
         const chatItemUpdate = {
           ...chatListItemChanges,
@@ -162,7 +157,6 @@ export class ChatService implements OnDestroy {
   }
 
   private _handleIncomingMessage(message: MessageDTO) {
-    console.log('Handle Incoming Message:', message);
     return this.chatDb.addMessage$(message).pipe(
       tap(() => this.onNewMessageSubject.next(message)),
       switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),

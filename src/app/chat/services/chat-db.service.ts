@@ -36,7 +36,6 @@ export class ChatDbService {
     private indexDb: NgxIndexedDBService,
     private userService: UsersService
   ) {
-    console.log('ChatDbService Initialized...............', this._chatsStore);
     this.indexDb
       .createObjectStore({
         store: this._chatsStore,
@@ -207,13 +206,6 @@ export class ChatDbService {
     remoteUserId: string,
     chatListItemChanges: Partial<ChatListItem>
   ) {
-    // get chat list item and update unread count;
-    console.log(
-      'Updating Chat List Item for user...............',
-      remoteUserId,
-      'Changes:',
-      chatListItemChanges
-    );
     return this.getChatListItemByRemoteUserId$(remoteUserId).pipe(
       map((chatListItem) => ({ ...chatListItem, ...chatListItemChanges })),
       switchMap((chatListItem) => this.addChatListItem$(chatListItem))
@@ -274,7 +266,6 @@ export class ChatDbService {
   }
 
   getChatMessageById$(messageId: string) {
-    console.log('Getting message by id:', messageId);
     return this.indexDb.getByIndex<MessageDTO>(
       this._chatsStore,
       'messageId',
@@ -292,7 +283,6 @@ export class ChatDbService {
   getAllSentMessageBefore$(messageId: string) {
     return this.getChatMessageById$(messageId).pipe(
       switchMap((message) => {
-        console.log('Message for udpate:', message);
         // create boundry by messageId and timestampl letss then equal to message.timestamp
         const id = `${message.senderId}_${message.receiverId}`;
         const bound = IDBKeyRange.bound(id, id);
@@ -335,13 +325,8 @@ export class ChatDbService {
 
 
   updateAllPreviousSentMessagesStatusByMessageId$(message: MessageUpdateDTO) {
-    console.log('Updating all previous messages a:', message);
     return this.getAllSentMessageBefore$(message.messageId).pipe(
       switchMap((messages) => {
-
-        console.log(`Found ${messages.length} messages to update`);
-        console.debug(`Last message: `, messages[messages.length - 1]);
-
         return forkJoin(
           messages
             .filter(
@@ -362,10 +347,8 @@ export class ChatDbService {
   }
 
   updateAllPreviousReceivedMessagesStatusByMessageId$(message: MessageUpdateDTO) {
-    console.log('Updating all previous messages a:', message);
     return this.getAllReceivedMessageBefore$(message.messageId).pipe(
       switchMap((messages) => {
-        console.log('Messages to update:', messages);
         return forkJoin(
           messages
             .filter(

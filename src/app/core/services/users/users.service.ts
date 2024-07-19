@@ -20,7 +20,6 @@ export class UsersService {
     private tokenService:TokenService,
     private router:Router
   ) {
-    console.debug('UsersService Initialized...............');
     this.getUser().subscribe({
       next: (user:User) => {
         this.currentUser$.next(user);

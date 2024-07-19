@@ -35,7 +35,6 @@ export class SearchUserComponent {
       switchMap((key) =>
         this.userService.searchUser(key).pipe(
           tap(() => {
-            console.log('Loading over');
             this.isLoading = false;
           })
         )

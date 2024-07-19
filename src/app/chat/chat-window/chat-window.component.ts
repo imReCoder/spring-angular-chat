@@ -88,7 +88,6 @@ export class ChatWindowComponent implements OnDestroy {
         filter((activeChat) => Boolean(activeChat)),
         map((activeChat) => activeChat as ChatListItem),
         tap(async (activeChat) => {
-          console.debug('Active Chat:', activeChat);
           this.activeChat = activeChat;
           await this.chatService.markChatItemAsRead(this.activeChat);
         }),
@@ -115,16 +114,10 @@ export class ChatWindowComponent implements OnDestroy {
   }
 
   markAllChatAsRead(lastMessage: MessageDTO) {
-    console.log(
-      'Last Message:',
-      lastMessage,
-      this.userService.getCurrentUserId()
-    );
+
     if (lastMessage?.senderId !== this.userService.getCurrentUserId()) {
-      console.log('Marking as Read:', this.activeChat);
       return this.chatService.markChatsAsRead(this.activeChat as ChatListItem);
     }
-    console.log('Last message is not present or is from current user');
     return [];
   }
 
@@ -135,7 +128,6 @@ export class ChatWindowComponent implements OnDestroy {
       this.inputMessage,
       this.activeChat.id as string
     );
-    console.log('Message:', message);
     this.chatService.sendMessage(message);
     this.inputMessage = '';
   }
