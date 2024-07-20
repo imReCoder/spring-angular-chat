@@ -3,7 +3,12 @@ import { CompatClient, IMessage, Message, Stomp } from '@stomp/stompjs';
 import { Observable, Subject } from 'rxjs';
 import SockJS from 'sockjs-client';
 import { TokenService } from '../token/token.service';
-import {  MessageDTO, MessageStatus, MessageUpdateDTO } from '../../models/message';
+import {
+  IUserStatusUpdate,
+  MessageDTO,
+  MessageStatus,
+  MessageUpdateDTO,
+} from '../../models/message';
 import { MessagesDataSharingService } from '../data-sharing/messages-data/messages-data-sharing.service';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '../../../shared/config.service';
@@ -14,14 +19,17 @@ import { ConfigService } from '../../../shared/config.service';
 export class WebsocketsService {
   private serverUrl;
   private stompClient!: CompatClient;
-  private userId:string;
+  private userId: string;
 
   private onIncomingMessageSubject = new Subject<MessageDTO>();
   private onIncomingMessageUpdateSubject = new Subject<MessageUpdateDTO>();
-  constructor(
-    private config:ConfigService,
+  private onSocketConnectedSubject = new Subject<boolean>();
 
-    private tokenService:TokenService
+  public onIncomingUserStatusChangeSubject = new Subject<IUserStatusUpdate>();
+  constructor(
+    private config: ConfigService,
+
+    private tokenService: TokenService
   ) {
     this.serverUrl = `${this.config.backend}/ws-message`;
     this.userId = this.tokenService.getUsreId();
@@ -39,65 +47,87 @@ export class WebsocketsService {
   }
 
   connectSocket() {
-   return this.stompClient.connect({
-       }, ()=>this.subscribeEndpoints(), this.errorCallBack);
+    return this.stompClient.connect(
+      {},
+      () => {
+        this.onSocketConnectedSubject.next(true);
+        this.subscribeEndpoints();
+      },
+      this.errorCallBack
+    );
   }
 
-  subscribeEndpoints(){
+  subscribeEndpoints() {
     // subscribe to the user's messages
-    const messageEndpoint =  `/topic/message.receiver/${this.userId}`;
-    this.stompClient.subscribe(
-      messageEndpoint,
-       (message: IMessage): void => {
-         const decoder = new TextDecoder('utf-8');
-         const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
-         const parsedMessage:MessageDTO = JSON.parse(jsonBody);
-         console.debug(`Received message: ${JSON.stringify(parsedMessage, null, 2)}`);
-         this.sendMessageUpdateDelivered(parsedMessage);
-         this.onIncomingMessageSubject.next(parsedMessage);
-       }
-     );
+    const messageEndpoint = `/topic/message.receiver/${this.userId}`;
+    this.stompClient.subscribe(messageEndpoint, (message: IMessage): void => {
+      const decoder = new TextDecoder('utf-8');
+      const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+      const parsedMessage: MessageDTO = JSON.parse(jsonBody);
+      console.debug(
+        `Received message: ${JSON.stringify(parsedMessage, null, 2)}`
+      );
+      this.sendMessageUpdateDelivered(parsedMessage);
+      this.onIncomingMessageSubject.next(parsedMessage);
+    });
 
     //  subscribe to message updates
-    const messageUpdateSentEndpoint =  `/topic/message.updates.sent/${this.userId}`;
+    const messageUpdateSentEndpoint = `/topic/message.updates.sent/${this.userId}`;
     this.stompClient.subscribe(
       messageUpdateSentEndpoint,
-        (message: IMessage): void => {
-          const decoder = new TextDecoder('utf-8');
-          const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
-          const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
-          parsedMessage.status = MessageStatus.SENT;
-          console.debug(`Received SENT message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
-          this.onIncomingMessageUpdateSubject.next(parsedMessage);
-        }
-      );
+      (message: IMessage): void => {
+        const decoder = new TextDecoder('utf-8');
+        const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+        const parsedMessage: MessageUpdateDTO = JSON.parse(jsonBody);
+        parsedMessage.status = MessageStatus.SENT;
+        console.debug(
+          `Received SENT message Updates: ${JSON.stringify(
+            parsedMessage,
+            null,
+            2
+          )}`
+        );
+        this.onIncomingMessageUpdateSubject.next(parsedMessage);
+      }
+    );
 
-       const messageUpdateDeliveredEndpoint =  `/topic/message.updates.delivered/${this.userId}`;
-        this.stompClient.subscribe(
-          messageUpdateDeliveredEndpoint,
-            (message: IMessage): void => {
-              const decoder = new TextDecoder('utf-8');
-              const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
-              const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
-              parsedMessage.status = MessageStatus.DELIVERED;
-              console.debug(`Received DELIVERED message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
-              this.onIncomingMessageUpdateSubject.next(parsedMessage);
-            }
-          );
+    const messageUpdateDeliveredEndpoint = `/topic/message.updates.delivered/${this.userId}`;
+    this.stompClient.subscribe(
+      messageUpdateDeliveredEndpoint,
+      (message: IMessage): void => {
+        const decoder = new TextDecoder('utf-8');
+        const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+        const parsedMessage: MessageUpdateDTO = JSON.parse(jsonBody);
+        parsedMessage.status = MessageStatus.DELIVERED;
+        console.debug(
+          `Received DELIVERED message Updates: ${JSON.stringify(
+            parsedMessage,
+            null,
+            2
+          )}`
+        );
+        this.onIncomingMessageUpdateSubject.next(parsedMessage);
+      }
+    );
 
-          const messageUpdateReadEndpoint =  `/topic/message.updates.read/${this.userId}`;
-          this.stompClient.subscribe(
-            messageUpdateReadEndpoint,
-              (message: IMessage): void => {
-                const decoder = new TextDecoder('utf-8');
-                const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
-                const parsedMessage:MessageUpdateDTO = JSON.parse(jsonBody);
-                parsedMessage.status = MessageStatus.READ;
-                console.debug(`Received READ message Updates: ${JSON.stringify(parsedMessage, null, 2)}`);
-                this.onIncomingMessageUpdateSubject.next(parsedMessage);
-              }
-            );
-
+    const messageUpdateReadEndpoint = `/topic/message.updates.read/${this.userId}`;
+    this.stompClient.subscribe(
+      messageUpdateReadEndpoint,
+      (message: IMessage): void => {
+        const decoder = new TextDecoder('utf-8');
+        const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+        const parsedMessage: MessageUpdateDTO = JSON.parse(jsonBody);
+        parsedMessage.status = MessageStatus.READ;
+        console.debug(
+          `Received READ message Updates: ${JSON.stringify(
+            parsedMessage,
+            null,
+            2
+          )}`
+        );
+        this.onIncomingMessageUpdateSubject.next(parsedMessage);
+      }
+    );
   }
 
   sendMessage(message: MessageDTO) {
@@ -105,51 +135,60 @@ export class WebsocketsService {
     console.debug(`Sending message: ${JSON.stringify(message, null, 2)}`);
     try {
       this.stompClient.send(
-        '/app/chat/message.send', {}, JSON.stringify(message)
+        '/app/chat/message.send',
+        {},
+        JSON.stringify(message)
       );
     } catch (error: unknown) {
       throw error;
     }
   }
 
-
-  sendMessageUpdateDelivered(message:MessageDTO){
-    const messageUpdate:MessageUpdateDTO = {
+  sendMessageUpdateDelivered(message: MessageDTO) {
+    const messageUpdate: MessageUpdateDTO = {
       status: MessageStatus.DELIVERED,
-      messageId: message.messageId as string
+      messageId: message.messageId as string,
     };
-    console.debug(`Sending message delivered update: ${JSON.stringify(messageUpdate, null, 2)}`);
+    console.debug(
+      `Sending message delivered update: ${JSON.stringify(
+        messageUpdate,
+        null,
+        2
+      )}`
+    );
     try {
       this.stompClient.send(
-        '/app/chat/message.updates.delivered', {}, JSON.stringify(messageUpdate)
+        '/app/chat/message.updates.delivered',
+        {},
+        JSON.stringify(messageUpdate)
       );
     } catch (error: unknown) {
       throw error;
     }
-
   }
 
-
-  sendMessageUpdateRead(message:MessageDTO){
-    const messageUpdate:MessageUpdateDTO = {
+  sendMessageUpdateRead(message: MessageDTO) {
+    const messageUpdate: MessageUpdateDTO = {
       status: MessageStatus.READ,
-      messageId: message.messageId as string
+      messageId: message.messageId as string,
     };
-    console.debug(`Sending message update: ${JSON.stringify(messageUpdate, null, 2)}`);
+    console.debug(
+      `Sending message update: ${JSON.stringify(messageUpdate, null, 2)}`
+    );
     try {
       this.stompClient.send(
-        '/app/chat/message.updates.read', {}, JSON.stringify(messageUpdate)
+        '/app/chat/message.updates.read',
+        {},
+        JSON.stringify(messageUpdate)
       );
     } catch (error: unknown) {
       throw error;
     }
-
   }
 
   errorCallBack(error: any) {
-    console.log(error)
+    console.log(error);
   }
-
 
   onIncomingMessage$(): Observable<MessageDTO> {
     return this.onIncomingMessageSubject.asObservable();
@@ -157,6 +196,32 @@ export class WebsocketsService {
 
   onIncomingMessageUpdate$(): Observable<MessageUpdateDTO> {
     return this.onIncomingMessageUpdateSubject.asObservable();
+  }
+
+  subcribeUserStatus(userId: string) {
+    const userStatusEndpoint = `/topic/user.status/${userId}`;
+    console.debug(`Subscribing to user status: ${userStatusEndpoint}`);
+    return this.stompClient.subscribe(
+      userStatusEndpoint,
+      (message: IMessage): void => {
+        const decoder = new TextDecoder('utf-8');
+        const jsonBody = decoder.decode(new Uint8Array(message.binaryBody));
+        const parsedMessage: IUserStatusUpdate = JSON.parse(jsonBody);
+        parsedMessage.userId = userId
+        console.debug(
+          `Received user status: ${JSON.stringify(parsedMessage, null, 2)}`
+        );
+        this.onIncomingUserStatusChangeSubject.next(parsedMessage);
+      }
+    );
+  }
+
+  getUserStatus$(): Observable<IUserStatusUpdate> {
+    return this.onIncomingUserStatusChangeSubject;
+  }
+
+  onSocketConnected$() {
+    return this.onSocketConnectedSubject.asObservable();
   }
 
   disconnect() {

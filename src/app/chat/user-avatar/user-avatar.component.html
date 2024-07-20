@@ -1,3 +1,7 @@
-<p-avatar *ngIf="profileImage" [image]="profileImage" styleClass="mr-2" size="large" shape="circle" />
-<p-avatar *ngIf="!profileImage && name" [label]="name.charAt(0).toUpperCase()" styleClass="mr-2" size="large"
-  shape="circle" />
+<div class="avatar-wrapper" >
+  <p-avatar *ngIf="profileImage" [image]="profileImage" styleClass="mr-2"
+    size="large" shape="circle" />
+  <p-avatar *ngIf="!profileImage && name" [label]="name.charAt(0).toUpperCase()" styleClass="mr-2" size="large"
+    shape="circle" />
+    <div class="user-status" [class.online]="isOnline" [class.offline]="!isOnline"></div>
+</div>

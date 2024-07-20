@@ -105,7 +105,7 @@ const commonImports = [
   AvatarGroupModule,
   // AccordionModule,
   // AutoCompleteModule,
-  // BadgeModule,
+  BadgeModule,
   // BreadcrumbModule,
   // BlockUIModule,
   // ButtonModule,

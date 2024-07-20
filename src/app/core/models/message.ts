@@ -20,3 +20,14 @@ export interface MessageUpdateDTO {
   status: MessageStatus;
   messageClientId?:string
 }
+
+export enum EUserStatus{
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE',
+  AWAY = 'AWAY'
+}
+
+export interface IUserStatusUpdate{
+  userId:string;
+  status:EUserStatus
+}

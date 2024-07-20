@@ -1,0 +1,20 @@
+.avatar-wrapper{
+  position: relative;
+}
+
+.user-status{
+  height: 10px;
+  width:10px;
+  position: absolute;
+  bottom:5px;
+  left:5px;
+  border-radius: 50px;
+}
+
+.user-status.online{
+  background-color: rgb(31, 230, 31);
+}
+
+.user-status.offline{
+  background-color: rgb(186, 186, 186);
+}

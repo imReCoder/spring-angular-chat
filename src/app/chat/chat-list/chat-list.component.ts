@@ -5,6 +5,7 @@ import { Observable, mergeMap, switchMap } from 'rxjs';
 import { ChatDbService } from '../services/chat-db.service';
 import { ChatListItem } from '../../core/models/chat-list-item';
 import { ChatService } from '../services/chat.service';
+import { UserStatusService } from '../services/user-status.service';
 
 @Component({
   selector: 'app-chat-list',
@@ -32,4 +33,5 @@ export class ChatListComponent implements AfterViewInit {
   activateChat(chat: ChatListItem) {
     this.chatService.setActiveChat(chat);
   }
+
 }

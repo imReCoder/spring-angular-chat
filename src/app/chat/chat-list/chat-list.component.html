@@ -12,7 +12,7 @@
     <p-divider />
     <div class="chats w-full">
       <ng-container *ngIf="(chatList$ | async) as chatListItems">
-     <app-chat-item *ngFor="let chat of chatListItems" [chatItem]="chat" (click)="activateChat(chat)"></app-chat-item>
+     <app-chat-item *ngFor="let chat of chatListItems" [chatItem]="chat"  (click)="activateChat(chat)"></app-chat-item>
     </ng-container>
     </div>
   </div>

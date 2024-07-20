@@ -28,6 +28,7 @@ import { UsersService } from '../../core/services/users/users.service';
 import { TokenService } from '../../core/services/token/token.service';
 import { ChatDbService } from './chat-db.service';
 import { ChatApiService } from './chat-api.service';
+import { UserStatusService } from './user-status.service';
 
 @Injectable({
   providedIn: 'root',
@@ -45,18 +46,41 @@ export class ChatService implements OnDestroy {
     private tokenService: TokenService,
     private chatDb: ChatDbService,
     private usersService: UsersService,
-    private chatApi: ChatApiService
+    private chatApi: ChatApiService,
+    private userStatusService: UserStatusService
   ) {
+    this.getNewMessages();
+    this._getMessageStatusChanges();
+    const initialUserStatusSub = this.chatDb
+      .getChatList$()
+      .pipe(
+        take(1),
+        switchMap((chatList) =>
+          this.userStatusService.getInitialUserStatus(chatList)
+        )
+      )
+      .subscribe();
+
+    const socketSub = this.wsService
+      .onSocketConnected$()
+      .subscribe((isConnected) => {
+        this.initUserStatus();
+      });
+
     const newMessageSub = this.wsService
       .onIncomingMessage$()
       .pipe(switchMap((message) => this._handleIncomingMessage(message)))
       .subscribe();
-    this.subs.add(newMessageSub);
+
     this.initWebSocket();
 
+    this.subs.add(newMessageSub);
+    this.subs.add(socketSub);
+    this.subs.add(initialUserStatusSub);
+  }
 
-    setTimeout(() => this.getNewMessages(), 1000);
-    this._getMessageStatusChanges().subscribe();
+  initWebSocket() {
+    return this.wsService.initializeWebSocketConnection();
   }
 
   getNewMessages() {
@@ -66,23 +90,31 @@ export class ChatService implements OnDestroy {
         filter((messages) => messages.length > 0),
         mergeMap((messages) => {
           return from(messages).pipe(
-            concatMap((message)=>this._handleIncomingMessage(message)),
+            concatMap((message) => this._handleIncomingMessage(message)),
             toArray(),
-            tap(()=>{
+            tap(() => {
               this.wsService.sendMessageUpdateDelivered(
-                  messages[messages.length - 1]
-                );
+                messages[messages.length - 1]
+              );
             })
-
-          )
+          );
           //
         })
       )
       .subscribe();
   }
 
-  initWebSocket() {
-    return this.wsService.initializeWebSocketConnection();
+  initUserStatus() {
+    const userStatusSub = this.chatDb
+      .getChatList$()
+      .pipe(
+        take(1),
+        tap((chatListItems) =>
+          this.userStatusService.initUserStatusChange(chatListItems)
+        )
+      )
+      .subscribe();
+    this.subs.add(userStatusSub);
   }
 
   setActiveChat(chat: ChatListItem): void {
@@ -111,20 +143,22 @@ export class ChatService implements OnDestroy {
   }
 
   async markChatItemAsRead(chatListItem: ChatListItem) {
-    await  this.chatDb.markChatItemAsReadAsync(chatListItem);
+    await this.chatDb.markChatItemAsReadAsync(chatListItem);
     // return this.markChatsAsRead(chatListItem);
   }
 
   markChatsAsRead(chatListItem: ChatListItem) {
     return this.chatDb.getLastMessageByRemoteUserId$(chatListItem.id).pipe(
       tap((lastMessage) => {
-        if(!lastMessage) return console.debug("No messages found for chat item");
-        if(lastMessage.status === MessageStatus.READ) return console.debug("All chats already marks read");
-         this.wsService.sendMessageUpdateRead(lastMessage);
-         return this.chatDb.updateAllPreviousReceivedMessagesStatusByMessageId$({
+        if (!lastMessage)
+          return console.debug('No messages found for chat item');
+        if (lastMessage.status === MessageStatus.READ)
+          return console.debug('All chats already marks read');
+        this.wsService.sendMessageUpdateRead(lastMessage);
+        return this.chatDb.updateAllPreviousReceivedMessagesStatusByMessageId$({
           status: MessageStatus.READ,
           messageId: lastMessage.messageId as string,
-         })
+        });
       })
     );
   }
@@ -160,16 +194,15 @@ export class ChatService implements OnDestroy {
     return this.chatDb.addMessage$(message).pipe(
       tap(() => this.onNewMessageSubject.next(message)),
       switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
-      switchMap((isPresent) =>{
-       return isPresent
+      switchMap((isPresent) => {
+        return isPresent
           ? this.updateChatListItem$(isPresent.id as string, {
               lastMessage: message.content,
               lastMessageTimestamp: message.timestamp,
               unread: isPresent.unread + 1,
             })
-          : this._handleNewChatListItem(message)
-      }
-      )
+          : this._handleNewChatListItem(message);
+      })
     );
   }
 
@@ -239,32 +272,36 @@ export class ChatService implements OnDestroy {
     return this._activeChatModifySubject.asObservable();
   }
 
-
   // get the last sent message of all the chat list item and fetch its current status
-  private _getMessageStatusChanges(){
-      return this.chatDb.getChatList$().pipe(
+  private _getMessageStatusChanges() {
+    return this.chatDb
+      .getChatList$()
+      .pipe(
         take(1),
-        switchMap((chatListItems)=>{
+        switchMap((chatListItems) => {
           return from(chatListItems).pipe(
-            mergeMap((chatListItem)=>this.chatDb.getLastMessageByMeTo$(chatListItem.id as string)),
-            filter((message)=>message.status !== MessageStatus.READ ),//if message is already read then no need to update
+            mergeMap((chatListItem) =>
+              this.chatDb.getLastMessageByMeTo$(chatListItem.id as string)
+            ),
+            filter((message) => message.status !== MessageStatus.READ), //if message is already read then no need to update
             // map it to create array of message ids
-            map((message)=>message.messageId as string),
+            map((message) => message.messageId as string),
             toArray(),
-            switchMap((messageIds)=>{
-              if(messageIds.length === 0) return of([]);
-              return this.chatApi.getMessagesLatestStatus$(messageIds)
+            switchMap((messageIds) => {
+              if (messageIds.length === 0) return of([]);
+              return this.chatApi.getMessagesLatestStatus$(messageIds);
             })
-
-          )
+          );
         }),
-        switchMap((messageUpdates)=>{
+        switchMap((messageUpdates) => {
           return from(messageUpdates).pipe(
-            mergeMap((messageUpdate)=>this.updateAllPreviousMessagesByMessageId$(messageUpdate))
-          )
+            mergeMap((messageUpdate) =>
+              this.updateAllPreviousMessagesByMessageId$(messageUpdate)
+            )
+          );
         })
-
       )
+      .subscribe();
   }
 
   ngOnDestroy(): void {

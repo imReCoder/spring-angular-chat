@@ -1,6 +1,6 @@
 <div class="chat-item w-full p-2 hover:bg-slate-200 rounded cursor-pointer" *ngIf="chatItem">
   <div class="flex w-full">
-    <app-user-avatar [profileImage]="chatItem.profileImage" [name]="chatItem.name"></app-user-avatar>
+    <app-user-avatar   [profileImage]="chatItem.profileImage" [name]="chatItem.name" [isOnline]="getUserStatus(chatItem.id)"></app-user-avatar>
     <div class="title flex-1 flex flex-col justify-center">
       <div class="chat-name">{{chatItem.name}}</div>
       <div class="chat-info flex justify-between text-gray-400 text-xs">

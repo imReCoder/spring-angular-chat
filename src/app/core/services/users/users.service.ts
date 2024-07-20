@@ -6,6 +6,7 @@ import { ConfigService } from '../../../shared/config.service';
 import { IResponse } from '../../models/response';
 import { TokenService } from '../token/token.service';
 import { Router } from '@angular/router';
+import { IUserStatusUpdate } from '../../models/message';
 
 @Injectable({
   providedIn: 'root'
@@ -59,5 +60,10 @@ export class UsersService {
 
   getCurrentUserId(){
     return this.tokenService.getUsreId();
+  }
+
+  getUsersStatus(userIds: string[]): Observable<IUserStatusUpdate[]> {
+    const url = `${this.baseURL}/status`;
+    return this.httpClient.post<IResponse<IUserStatusUpdate[]>>(url, { userIds }).pipe(map(res=>res.data));
   }
 }
