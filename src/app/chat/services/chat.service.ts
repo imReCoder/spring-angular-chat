@@ -1,3 +1,4 @@
+import { NotificationService } from './../../shared/services/notification.service';
 import { Injectable, OnDestroy } from '@angular/core';
 import {
   BehaviorSubject,
@@ -47,7 +48,8 @@ export class ChatService implements OnDestroy {
     private chatDb: ChatDbService,
     private usersService: UsersService,
     private chatApi: ChatApiService,
-    private userStatusService: UserStatusService
+    private userStatusService: UserStatusService,
+    private ns: NotificationService
   ) {
     this.getNewMessages();
     this._getMessageStatusChanges();
@@ -191,17 +193,32 @@ export class ChatService implements OnDestroy {
   }
 
   private _handleIncomingMessage(message: MessageDTO) {
-    return this.chatDb.addMessage$(message).pipe(
-      tap(() => this.onNewMessageSubject.next(message)),
-      switchMap(() => this.chatDb.isUserIdPresentInChatList(message.senderId)),
-      switchMap((isPresent) => {
-        return isPresent
-          ? this.updateChatListItem$(isPresent.id as string, {
-              lastMessage: message.content,
-              lastMessageTimestamp: message.timestamp,
-              unread: isPresent.unread + 1,
-            })
-          : this._handleNewChatListItem(message);
+    return this.getActiveChat$().pipe(
+      take(1),
+      switchMap((activeChat) => {
+        return this.chatDb.addMessage$(message).pipe(
+          tap(() => this.onNewMessageSubject.next(message)),
+          switchMap(() =>
+            this.chatDb.isUserIdPresentInChatList(message.senderId)
+          ),
+          switchMap((isPresent) => {
+            return isPresent
+              ? this.updateChatListItem$(isPresent.id as string, {
+                  lastMessage: message.content,
+                  lastMessageTimestamp: message.timestamp,
+                  unread: isPresent.unread + 1,
+                })
+              : this._handleNewChatListItem(message);
+          }),
+          tap((chatItem) => {
+            if (activeChat?.id !== message.senderId) {//if sender is not active chat then show notification
+              this.ns.showNotification(`${chatItem.name}`, {//show notification
+                body: message.content,
+                // icon: 'assets/icons/icon-72x72.png',
+              });
+            }
+          }), // show notification
+        );
       })
     );
   }
