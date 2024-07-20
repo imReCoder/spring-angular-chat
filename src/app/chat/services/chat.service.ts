@@ -306,12 +306,21 @@ export class ChatService implements OnDestroy {
             toArray(),
             switchMap((messageIds) => {
               if (messageIds.length === 0) return of([]);
-              return this.chatApi.getMessagesLatestStatus$(messageIds);
+              return this.chatApi.getMessagesLatestStatus$(messageIds).pipe(
+                map((messageUpdates) => ({ messageIds, messageUpdates }))
+              );
             })
           );
         }),
-        switchMap((messageUpdates) => {
-          return from(messageUpdates).pipe(
+        map((result) => result as {messageIds:string[],messageUpdates:MessageUpdateDTO[]}),
+        map(({messageIds,messageUpdates}) => {
+          const updatedMessageIds = messageUpdates?.map((update) => update.messageId);
+          const missingMessageIds = messageIds?.filter(id => !updatedMessageIds.includes(id));
+          const missingupdates = missingMessageIds?.map(id => ({messageId:id,status:MessageStatus.READ}));
+          return {messageUpdates:[...messageUpdates,...missingupdates]};
+        }),//
+        switchMap((result) => {
+          return from(result.messageUpdates).pipe(
             mergeMap((messageUpdate) =>
               this.updateAllPreviousMessagesByMessageId$(messageUpdate)
             )
