@@ -66,7 +66,6 @@ export class UserStatusService {
     const ids = chatListItems.map((u) => u.id);
     return this.userService.getUsersStatus(ids).pipe(
       tap((status) => {
-        console.log('status res', status);
         status.forEach((s) => {
           this.userStatuses.set(s.userId, s.status);
           console.debug(`User ${s.userId} is ${s.status}`);

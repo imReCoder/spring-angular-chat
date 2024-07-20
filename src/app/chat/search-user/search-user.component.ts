@@ -6,6 +6,7 @@ import {
   debounceTime,
   delay,
   distinctUntilChanged,
+  map,
   of,
   switchMap,
   tap,
@@ -34,6 +35,7 @@ export class SearchUserComponent {
       // tap(() => this.isLoading = true),
       switchMap((key) =>
         this.userService.searchUser(key).pipe(
+          map(users=>users.filter(user=>user.id !== this.userService.getCurrentUserId())),
           tap(() => {
             this.isLoading = false;
           })
@@ -48,6 +50,9 @@ export class SearchUserComponent {
   }
 
   selectUser(user:User){
+    if(user.id === this.userService.getCurrentUserId()){
+      return alert('You cannot chat with yourself');
+    }
     this.dialogRef.close(user);
   }
 }
